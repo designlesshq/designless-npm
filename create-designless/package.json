@@ -5,6 +5,12 @@
   "homepage": "https://designless.app",
   "license": "Apache-2.0",
   "author": "Designless Private Limited <hello@designless.app>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/designlesshq/designless-npm.git",
+    "directory": "create-designless"
+  },
+  "bugs": "https://github.com/designlesshq/designless-npm/issues",
   "keywords": [
     "designless",
     "create",
