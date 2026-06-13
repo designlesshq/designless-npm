@@ -1,0 +1,21 @@
+[package]
+name = "designless-annotate-swc"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "SWC plugin: stamp annotate/v1 source markers on host JSX elements (Next/Turbopack)."
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+swc_core = { version = "68", features = ["ecma_plugin_transform", "ecma_ast", "ecma_visit", "common"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+# Smaller wasm: the artifact ships in the npm tarball.
+opt-level = "z"
+lto = true
+strip = true

@@ -1,0 +1,27 @@
+node_modules/
+# Rust build output. The shipped artifact is swc-plugin/annotate.wasm (tracked).
+target/
+*/swc-plugin/target/
+Cargo.lock
+.DS_Store
+*.tgz
+.vitest/
+
+# Local npm name-reservation stubs — NOT part of this public repo.
+designagent/
+designhq/
+designless/
+designless-cli/
+designless-core/
+designless-sdk/
+scoped-cli/
+scoped-core/
+scoped-designagent-cli/
+scoped-mcp/
+scoped-prism/
+scoped-sdk/
+scoped-skills/
+
+# SWC plugin runtime cache (created by @swc/core during tests)
+.swc/
+*/.swc/

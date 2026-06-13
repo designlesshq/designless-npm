@@ -1,0 +1,31 @@
+{
+  "name": "create-designless",
+  "version": "0.1.0",
+  "description": "Wire @designless/annotate into a Next.js or Vite-React project so Designless can route a rendered element back to its source line. One command, dev-only, reversible.",
+  "homepage": "https://designless.app",
+  "license": "Apache-2.0",
+  "author": "Designless Private Limited <hello@designless.app>",
+  "keywords": [
+    "designless",
+    "create",
+    "initializer",
+    "next",
+    "vite",
+    "annotate"
+  ],
+  "type": "commonjs",
+  "bin": {
+    "create-designless": "bin/create-designless.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}
