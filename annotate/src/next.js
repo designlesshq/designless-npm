@@ -27,6 +27,11 @@ const fs = require('fs');
 const { isEnabled, warnOnce } = require('./gating');
 
 const WASM_RELATIVE = '../swc-plugin/annotate.wasm';
+// The swcPlugins entry MUST be a package SUBPATH SPECIFIER, not an absolute
+// filesystem path: Next/Turbopack treats an absolute path as a server-relative
+// import and fails to resolve it ("server relative imports are not
+// implemented"). The specifier resolves through this package's `exports` map.
+const WASM_SPECIFIER = '@designless/annotate/swc/annotate.wasm';
 
 /**
  * @param {object} [nextConfig] - the project's existing Next config
@@ -37,6 +42,8 @@ function withDesignless(nextConfig, options) {
   const base = nextConfig && typeof nextConfig === 'object' ? nextConfig : {};
   if (!isEnabled(options)) return base; // production -> untouched, byte-identical
 
+  // Existence check (loud no-op) uses the real on-disk path; the swcPlugins
+  // ENTRY uses the resolver specifier (above).
   const wasmPath = path.join(__dirname, WASM_RELATIVE);
   if (!fs.existsSync(wasmPath)) {
     warnOnce(
@@ -49,8 +56,8 @@ function withDesignless(nextConfig, options) {
   const experimental = base.experimental && typeof base.experimental === 'object' ? base.experimental : {};
   const existing = Array.isArray(experimental.swcPlugins) ? experimental.swcPlugins : [];
   // Idempotent: if our plugin is already wired (re-wrapped config), don't add twice.
-  const alreadyWired = existing.some((entry) => Array.isArray(entry) && typeof entry[0] === 'string' && entry[0].includes('annotate.wasm'));
-  const swcPlugins = alreadyWired ? existing : existing.concat([[wasmPath, {}]]);
+  const alreadyWired = existing.some((entry) => Array.isArray(entry) && typeof entry[0] === 'string' && entry[0].includes('@designless/annotate'));
+  const swcPlugins = alreadyWired ? existing : existing.concat([[WASM_SPECIFIER, {}]]);
 
   return Object.assign({}, base, {
     experimental: Object.assign({}, experimental, { swcPlugins }),

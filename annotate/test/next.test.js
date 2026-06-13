@@ -32,13 +32,17 @@ function withWasm(present, fn) {
 }
 
 describe('dev wiring', () => {
-  it('injects the swcPlugin pointing at the wasm artifact', () => {
+  it('injects the swcPlugin as a package SPECIFIER, not an absolute path (the Turbopack-resolution fix)', () => {
     withWasm(true, () => {
       const cfg = withDesignless({ reactStrictMode: true }, { enabled: true });
       expect(cfg.reactStrictMode).toBe(true);
       const plugins = cfg.experimental.swcPlugins;
       expect(Array.isArray(plugins)).toBe(true);
-      expect(plugins[0][0]).toContain('annotate.wasm');
+      // Specifier resolved through this package's exports map — NEVER an
+      // absolute path (Turbopack treats that as a server-relative import and
+      // fails: the bug live-found under Next 16, fixed in 0.1.1).
+      expect(plugins[0][0]).toBe('@designless/annotate/swc/annotate.wasm');
+      expect(plugins[0][0].startsWith('/')).toBe(false);
     });
   });
 

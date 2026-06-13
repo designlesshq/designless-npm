@@ -1,6 +1,6 @@
 {
   "name": "@designless/annotate",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Build-time source markers so Designless can route a rendered element back to its exact source line. Inert, dev-only, zero network. The only Designless code in your build.",
   "homepage": "https://designless.app",
   "license": "Apache-2.0",
@@ -27,7 +27,8 @@
     "./babel": "./src/babel.js",
     "./next": "./src/next.js",
     "./contract": "./src/contract.js",
-    "./swc/annotate.wasm": "./swc-plugin/annotate.wasm"
+    "./swc/annotate.wasm": "./swc-plugin/annotate.wasm",
+    "./package.json": "./package.json"
   },
   "files": [
     "src",

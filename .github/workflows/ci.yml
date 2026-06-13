@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: build wasm + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust + wasm target
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add wasm32-wasip1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build the SWC plugin (wasm)
+        working-directory: annotate
+        run: |
+          cargo build --release --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml
+          cp swc-plugin/target/wasm32-wasip1/release/designless_annotate_swc.wasm swc-plugin/annotate.wasm
+
+      - name: Native Rust unit tests
+        working-directory: annotate/swc-plugin
+        run: cargo test --release
+
+      - name: '@designless/annotate — JS tests (Babel + SWC wasm via @swc/core)'
+        working-directory: annotate
+        run: |
+          npm install --no-audit --no-fund
+          npx vitest run
+
+      - name: 'create-designless — JS tests'
+        working-directory: create-designless
+        run: |
+          npm install --no-audit --no-fund
+          npx vitest run
+
+      - name: Upload wasm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: annotate-wasm
+          path: annotate/swc-plugin/annotate.wasm
+
+  next-turbopack:
+    name: 'real Next (${{ matrix.next }}) under Turbopack'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        next: [latest, canary]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Restore wasm artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: annotate-wasm
+          path: annotate/swc-plugin
+
+      - name: Pack @designless/annotate (the real published file set)
+        id: pack
+        working-directory: annotate
+        run: echo "tarball=$(npm pack --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Scaffold a minimal Next app and wire the plugin
+        run: |
+          mkdir -p app
+          cat > package.json <<'JSON'
+          { "name": "ci-next", "private": true, "version": "0.0.0" }
+          JSON
+          cat > app/layout.tsx <<'TSX'
+          export default function RootLayout({ children }: { children: React.ReactNode }) {
+            return (<html lang="en"><body>{children}</body></html>);
+          }
+          TSX
+          cat > app/page.tsx <<'TSX'
+          export default function Home() {
+            return (<main><h1 className="t">Hello Designless</h1></main>);
+          }
+          TSX
+          cat > next.config.js <<'JS'
+          const { withDesignless } = require('@designless/annotate/next')
+          module.exports = withDesignless({ reactStrictMode: true })
+          JS
+          npm install --no-audit --no-fund next@${{ matrix.next }} react react-dom "./annotate/${{ steps.pack.outputs.tarball }}"
+
+      - name: 'next dev under Turbopack stamps annotate/v1 markers'
+        run: |
+          npx next dev -p 3939 > next-dev.log 2>&1 &
+          DEV_PID=$!
+          for i in $(seq 1 60); do
+            code=$(curl -s --max-time 2 -o /dev/null -w "%{http_code}" http://localhost:3939/ || true)
+            [ "$code" = "200" ] && break
+            sleep 1
+          done
+          HTML=$(curl -s --max-time 6 http://localhost:3939/ || true)
+          kill $DEV_PID 2>/dev/null || true
+          echo "$HTML" | grep -oE 'data-source-file="[^"]*"|data-designless="[^"]*"' | sort -u || true
+          if echo "$HTML" | grep -q 'data-designless="annotate/v1"'; then
+            echo "PASS: markers stamped under Next ${{ matrix.next }}"
+          else
+            echo "FAIL: no markers — Turbopack/ABI incompatibility on Next ${{ matrix.next }}"
+            tail -40 next-dev.log
+            exit 1
+          fi
