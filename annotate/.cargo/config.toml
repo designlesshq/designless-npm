@@ -1,0 +1,8 @@
+# rustc 1.96 made wasm-ld reject undefined symbols by default. An SWC plugin relies
+# on its host functions (__set_transform_result, __emit_diagnostics,
+# __set_transform_plugin_core_pkg_diagnostics, …) being left as wasm imports that
+# the @swc/core host supplies at runtime — exactly the symbols 1.96's linker now
+# rejects. Allow undefined symbols for the plugin target, restoring the pre-1.96
+# behaviour (and the import shape of the already-published, working wasm).
+[target.wasm32-wasip1]
+rustflags = ["-C", "link-arg=--allow-undefined"]

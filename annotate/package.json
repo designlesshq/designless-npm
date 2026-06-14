@@ -37,7 +37,7 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "build:swc": "cargo build --release --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml && cp swc-plugin/target/wasm32-wasip1/release/designless_annotate_swc.wasm swc-plugin/annotate.wasm"
+    "build:swc": "cargo build --release --locked --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml && cp swc-plugin/target/wasm32-wasip1/release/designless_annotate_swc.wasm swc-plugin/annotate.wasm"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
