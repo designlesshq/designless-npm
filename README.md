@@ -15,8 +15,8 @@ npm create designless@latest -- next     # or: vite
 
 Then start your dev server and open the Designless canvas.
 
-## Why these are public
+## What runs in your build
 
-`@designless/annotate` is the one piece of Designless that runs inside your build, so it is open by design: a single `grep` shows you exactly what it does (it stamps `data-source-*` attributes on host elements in development, and nothing else). You can read every line before you trust it.
+Only `@designless/annotate`, in development. It adds `data-source-*` attributes to host elements and does nothing else: no network calls, no change to production output.
 
 Apache-2.0

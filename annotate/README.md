@@ -48,8 +48,8 @@ import react from '@vitejs/plugin-react'
 export default { plugins: [react({ babel: { plugins: ['@designless/annotate/babel'] } })] }
 ```
 
-## Inert by design
+## Scope
 
-This is the only Designless code that runs in your build, and it is deliberately thin: no network calls on any build path, no configuration, nothing hidden. The package is `grep`-verifiable. Search it and you find attribute strings, nothing else. That thinness is the point.
+Development only. No network calls on any build path, no configuration, no change to production output. The package adds the marker attributes described above and nothing else.
 
 Apache-2.0 · [designless.app](https://designless.app)
