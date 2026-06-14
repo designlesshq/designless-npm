@@ -25,7 +25,7 @@ jobs:
       - name: Build the SWC plugin (wasm)
         working-directory: annotate
         run: |
-          cargo build --release --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml
+          cargo build --release --locked --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml
           cp swc-plugin/target/wasm32-wasip1/release/designless_annotate_swc.wasm swc-plugin/annotate.wasm
 
       - name: Native Rust unit tests
@@ -95,7 +95,9 @@ jobs:
           const { withDesignless } = require('@designless/annotate/next')
           module.exports = withDesignless({ reactStrictMode: true })
           JS
-          npm install --no-audit --no-fund next@${{ matrix.next }} react react-dom "./annotate/${{ steps.pack.outputs.tarball }}"
+          # The scaffold uses .tsx files, so Next (16.2.9+) requires the TS toolchain
+          # present or `next dev` aborts on its TS check before any markers stamp.
+          npm install --no-audit --no-fund next@${{ matrix.next }} react react-dom typescript @types/react @types/node "./annotate/${{ steps.pack.outputs.tarball }}"
 
       - name: 'next dev under Turbopack stamps annotate/v1 markers'
         run: |

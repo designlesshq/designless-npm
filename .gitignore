@@ -3,6 +3,10 @@ node_modules/
 target/
 */swc-plugin/target/
 Cargo.lock
+# ...but the swc-plugin lock IS tracked: it pins swc_core + its plugin host ABI so
+# CI rebuilds the wasm reproducibly. An open caret range (swc_core = "68") let CI
+# resolve a newer 68.x whose plugin ABI dropped host symbols → wasm link failure.
+!annotate/swc-plugin/Cargo.lock
 .DS_Store
 *.tgz
 .vitest/
