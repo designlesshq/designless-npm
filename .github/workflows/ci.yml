@@ -95,7 +95,9 @@ jobs:
           const { withDesignless } = require('@designless/annotate/next')
           module.exports = withDesignless({ reactStrictMode: true })
           JS
-          npm install --no-audit --no-fund next@${{ matrix.next }} react react-dom "./annotate/${{ steps.pack.outputs.tarball }}"
+          # The scaffold uses .tsx files, so Next (16.2.9+) requires the TS toolchain
+          # present or `next dev` aborts on its TS check before any markers stamp.
+          npm install --no-audit --no-fund next@${{ matrix.next }} react react-dom typescript @types/react @types/node "./annotate/${{ steps.pack.outputs.tarball }}"
 
       - name: 'next dev under Turbopack stamps annotate/v1 markers'
         run: |
