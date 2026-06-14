@@ -25,7 +25,7 @@ jobs:
       - name: Build the SWC plugin (wasm)
         working-directory: annotate
         run: |
-          cargo build --release --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml
+          cargo build --release --locked --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml
           cp swc-plugin/target/wasm32-wasip1/release/designless_annotate_swc.wasm swc-plugin/annotate.wasm
 
       - name: Native Rust unit tests
