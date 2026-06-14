@@ -1,0 +1,36 @@
+{
+  "schema": "designless-annotate-capabilities/v1",
+  "version": "v1",
+  "note": "Framework support for create-designless. Served statically at https://cdn.designless.app/annotate/capabilities.v1.json and fetched by the initializer, which merges it over its built-in baseline (so new framework support ships without an npm release). This file is the canonical source; the npm package's baked-in baseline mirrors it. Public, inert data — no secrets, no engine details.",
+  "frameworks": {
+    "next": {
+      "id": "next",
+      "label": "Next.js",
+      "aliases": ["nextjs", "next.js"],
+      "engine": "swc",
+      "detect": {
+        "dep": ["next"],
+        "config": ["next.config.js", "next.config.mjs", "next.config.ts"]
+      },
+      "wire": {
+        "kind": "next-config",
+        "import": "@designless/annotate/next",
+        "wrapper": "withDesignless"
+      }
+    },
+    "vite": {
+      "id": "vite",
+      "label": "Vite + React",
+      "aliases": ["vite-react", "react", "react-vite"],
+      "engine": "babel",
+      "detect": {
+        "dep": ["vite", "@vitejs/plugin-react"],
+        "config": ["vite.config.js", "vite.config.ts", "vite.config.mjs"]
+      },
+      "wire": {
+        "kind": "vite-babel",
+        "import": "@designless/annotate/babel"
+      }
+    }
+  }
+}

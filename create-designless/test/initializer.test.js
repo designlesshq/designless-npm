@@ -107,3 +107,17 @@ describe('doctorReport', () => {
     expect(red.checks.find((c) => c.name === 'config wired').ok).toBe(false);
   });
 });
+
+describe('the canonical CDN manifest stays in sync with the baked baseline', () => {
+  // The published manifest (cdn/annotate/capabilities.v1.json) is the source of
+  // truth; the package baseline is its offline mirror. They must not drift, or
+  // an offline user and an online user would get different wiring.
+  it('cdn/annotate/capabilities.v1.json merges to exactly the baseline', async () => {
+    const fs = await import('node:fs');
+    const url = new URL('../../cdn/annotate/capabilities.v1.json', import.meta.url);
+    const manifest = JSON.parse(fs.readFileSync(url, 'utf8'));
+    const merged = mergeCapabilities(BASELINE, manifest);
+    expect(merged.next).toEqual(BASELINE.next);
+    expect(merged.vite).toEqual(BASELINE.vite);
+  });
+});
