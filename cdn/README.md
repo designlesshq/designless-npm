@@ -23,15 +23,14 @@ No edge function and no server logic: the CDN is purely the serve mechanism for 
 
 ### How to publish (after editing this file)
 
-Upload the file to the `annotate` bucket. One-off, with the Supabase CLI (needs project access):
+Merge the change to `main`, then trigger the publish endpoint. It re-fetches this exact file from the GitHub source and writes it to the bucket (idempotent, fixed action — no request input influences the write):
 
 ```bash
-supabase storage cp cdn/annotate/capabilities.v1.json \
-  ss:///annotate/capabilities.v1.json \
-  --project-ref mjvbhqaqiqfgxgzicrao --experimental
+curl -X POST "https://api.designless.app/functions/v1/annotate-publish" \
+  -H "Authorization: Bearer <PROJECT_ANON_KEY>" -H "apikey: <PROJECT_ANON_KEY>"
 ```
 
-Recommended for the long run: a CI publish step (GitHub Action) that uploads this file to the bucket whenever it changes on `main`, using a `SUPABASE_SERVICE_KEY` repo secret. Then editing the JSON in a PR is the whole update flow.
+The endpoint uses the service role from its own server-side env (the key is never handled by the caller). Source: `designsystem` `supabase/functions/annotate-publish`. A CI step on this repo can POST to it on every change to `cdn/annotate/*`, making "edit the JSON in a PR" the entire update flow.
 
 ### Is this needed in the `designless-agent` plugin?
 
