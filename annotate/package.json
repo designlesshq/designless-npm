@@ -1,6 +1,6 @@
 {
   "name": "@designless/annotate",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Build-time source markers so Designless can route a rendered element back to its exact source line. Inert, dev-only, zero network. The only Designless code in your build.",
   "homepage": "https://designless.app",
   "license": "Apache-2.0",
@@ -18,6 +18,9 @@
     "next",
     "vite",
     "svelte",
+    "vue",
+    "astro",
+    "qwik",
     "source-maps",
     "dev"
   ],
@@ -28,6 +31,9 @@
     "./babel": "./src/babel.js",
     "./next": "./src/next.js",
     "./svelte": "./src/svelte.js",
+    "./vue": "./src/vue.js",
+    "./astro": "./src/astro.js",
+    "./qwik": "./src/qwik.js",
     "./contract": "./src/contract.js",
     "./swc/annotate.wasm": "./swc-plugin/annotate.wasm",
     "./package.json": "./package.json"
@@ -42,9 +48,13 @@
     "build:swc": "cargo build --release --locked --target wasm32-wasip1 --manifest-path swc-plugin/Cargo.toml && cp swc-plugin/target/wasm32-wasip1/release/designless_annotate_swc.wasm swc-plugin/annotate.wasm"
   },
   "devDependencies": {
+    "@astrojs/compiler": "^4.0.0",
     "@babel/core": "^7.29.7",
+    "@babel/parser": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
     "@swc/core": "^1.15.41",
+    "@vue/compiler-dom": "^3.5.38",
+    "@vue/compiler-sfc": "^3.5.38",
     "svelte": "^5.56.3",
     "vitest": "^2.1.9"
   }
