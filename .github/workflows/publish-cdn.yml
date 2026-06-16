@@ -1,0 +1,52 @@
+name: Publish CDN manifest
+
+# Auto-publishes the annotate capability manifest to cdn.designless.app whenever
+# cdn/annotate/** changes on main. It calls the internal, secret-gated
+# annotate-publish edge function, which is FIXED-ACTION: it re-fetches this
+# repo's cdn/annotate/capabilities.v1.json from main and writes it to the public
+# Storage bucket. No request input influences the write.
+#
+# Auth: the dedicated ANNOTATE_PUBLISH_AUTH_KEY (repo Actions secret) sent as the
+# x-internal-auth-key header. This key's ONLY capability is triggering this
+# harmless re-sync — it is deliberately NOT a billing/compliance secret — so its
+# presence in this public repo's Actions secrets is low-risk, and push-event
+# secrets are never exposed to forked-PR workflows.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cdn/annotate/**'
+  workflow_dispatch: {}   # manual re-sync / verification
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-cdn
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Re-sync cdn.designless.app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger annotate-publish (secret-gated)
+        env:
+          KEY: ${{ secrets.ANNOTATE_PUBLISH_AUTH_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::ANNOTATE_PUBLISH_AUTH_KEY is not set in repo Actions secrets"
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/resp.json -w "%{http_code}" -X POST \
+            "https://api.designless.app/functions/v1/annotate-publish" \
+            -H "x-internal-auth-key: $KEY")
+          echo "annotate-publish -> HTTP $code"
+          cat /tmp/resp.json 2>/dev/null || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::CDN re-sync failed (HTTP $code)"
+            exit 1
+          fi
+          echo "CDN manifest re-synced."
