@@ -29,3 +29,11 @@ scoped-skills/
 # SWC plugin runtime cache (created by @swc/core during tests)
 .swc/
 */.swc/
+
+# Internal publish/release mechanics — kept local, NOT in this public repo.
+# (The CDN re-sync trigger and the npm release routine are operator tooling;
+# the capability MANIFEST itself, cdn/annotate/capabilities.v1.json, stays
+# tracked because the publish edge function fetches it from this repo's main.)
+/cdn/README.md
+/scripts/release.local.mjs
+RELEASING.local.md
