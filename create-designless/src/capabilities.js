@@ -45,6 +45,35 @@ const BASELINE = Object.freeze({
     // Prepend the markup preprocessor to svelte.config.js `preprocess: [...]`.
     wire: { kind: 'svelte-preprocess', import: "@designless/annotate/svelte" },
   },
+  vue: {
+    id: 'vue',
+    label: 'Vue (Vite)',
+    aliases: ['vuejs', 'vue3', 'vue.js'],
+    engine: 'vue',
+    // Shares vite.config with Vite-React/Qwik; the `vue`/@vitejs/plugin-vue
+    // dependency is what disambiguates it (see detect.js).
+    detect: { dep: ['vue', '@vitejs/plugin-vue'], config: ['vite.config.js', 'vite.config.ts', 'vite.config.mjs'] },
+    // Add the Vite plugin (enforce: 'pre') to vite.config plugins.
+    wire: { kind: 'vite-plugin', import: "@designless/annotate/vue", default: 'designlessVue' },
+  },
+  astro: {
+    id: 'astro',
+    label: 'Astro',
+    aliases: ['astrojs', 'astro.js'],
+    engine: 'astro',
+    detect: { dep: ['astro'], config: ['astro.config.mjs', 'astro.config.ts', 'astro.config.js', 'astro.config.cjs'] },
+    // Add the integration to astro.config `integrations: [...]`.
+    wire: { kind: 'astro-integration', import: "@designless/annotate/astro", default: 'designlessAstro' },
+  },
+  qwik: {
+    id: 'qwik',
+    label: 'Qwik',
+    aliases: ['qwikjs', 'qwik-city', 'qwikcity'],
+    engine: 'qwik',
+    detect: { dep: ['@builder.io/qwik', '@builder.io/qwik-city', '@qwik.dev/core'], config: ['vite.config.ts', 'vite.config.js', 'vite.config.mjs'] },
+    // Add the Vite plugin (enforce: 'pre') to vite.config plugins.
+    wire: { kind: 'vite-plugin', import: "@designless/annotate/qwik", default: 'designlessQwik' },
+  },
 });
 
 const DEFAULT_MANIFEST_URL = 'https://cdn.designless.app/annotate/capabilities.v1.json';

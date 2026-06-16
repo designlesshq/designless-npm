@@ -16,6 +16,11 @@ describe('capabilities', () => {
     expect(frameworkByToken(BASELINE, 'react').id).toBe('vite');
     expect(frameworkByToken(BASELINE, 'svelte').id).toBe('svelte');
     expect(frameworkByToken(BASELINE, 'sveltekit').id).toBe('svelte');
+    expect(frameworkByToken(BASELINE, 'vue').id).toBe('vue');
+    expect(frameworkByToken(BASELINE, 'vuejs').id).toBe('vue');
+    expect(frameworkByToken(BASELINE, 'astro').id).toBe('astro');
+    expect(frameworkByToken(BASELINE, 'qwik').id).toBe('qwik');
+    expect(frameworkByToken(BASELINE, 'qwik-city').id).toBe('qwik');
     expect(frameworkByToken(BASELINE, 'angular')).toBe(null);
     expect(frameworkByToken(BASELINE, '')).toBe(null);
   });
@@ -52,6 +57,44 @@ describe('classifyFramework', () => {
   });
   it('returns null for an unrecognizable project', () => {
     expect(classifyFramework(BASELINE, { deps: new Set(['express']), files: new Set() })).toBe(null);
+  });
+
+  it('Vue wins over Vite-React on a shared vite.config via its dependency', () => {
+    const r = classifyFramework(BASELINE, {
+      deps: new Set(['vue', '@vitejs/plugin-vue', 'vite']),
+      files: new Set(['vite.config.js']),
+    });
+    expect(r.entry.id).toBe('vue');
+    expect(r.via).toBe('dep');
+  });
+
+  it('Qwik wins over Vite-React on a shared vite.config via its dependency', () => {
+    const r = classifyFramework(BASELINE, {
+      deps: new Set(['@builder.io/qwik', 'vite']),
+      files: new Set(['vite.config.ts']),
+    });
+    expect(r.entry.id).toBe('qwik');
+    expect(r.via).toBe('dep');
+  });
+
+  it('plain Vite-React still claims the shared vite.config when no framework dep is present', () => {
+    const r = classifyFramework(BASELINE, {
+      deps: new Set(['react', '@vitejs/plugin-react', 'vite']),
+      files: new Set(['vite.config.js']),
+    });
+    expect(r.entry.id).toBe('vite');
+  });
+
+  it('Astro is detected by its unique config file', () => {
+    const r = classifyFramework(BASELINE, { deps: new Set(['astro']), files: new Set(['astro.config.mjs']) });
+    expect(r.entry.id).toBe('astro');
+    expect(r.via).toBe('config');
+  });
+
+  it('Svelte is detected by its unique config file (previously unreachable)', () => {
+    const r = classifyFramework(BASELINE, { deps: new Set(['svelte', '@sveltejs/kit']), files: new Set(['svelte.config.js']) });
+    expect(r.entry.id).toBe('svelte');
+    expect(r.via).toBe('config');
   });
 });
 
@@ -92,6 +135,39 @@ describe('planWiring - Vite', () => {
   });
 });
 
+describe('planWiring - Svelte / Vue / Astro / Qwik (shape-dependent, manual)', () => {
+  it('Svelte emits a manual preprocessor snippet and is idempotent', () => {
+    const plan = planWiring(BASELINE.svelte, 'export default { preprocess: [vitePreprocess()] }', 'svelte.config.js');
+    expect(plan.action).toBe('manual');
+    expect(plan.instructions).toContain('@designless/annotate/svelte');
+    expect(planWiring(BASELINE.svelte, "import x from '@designless/annotate/svelte'").action).toBe('already-wired');
+  });
+
+  it('Vue emits a manual Vite-plugin snippet with the right import + default name', () => {
+    const plan = planWiring(BASELINE.vue, 'export default defineConfig({ plugins: [vue()] })', 'vite.config.js');
+    expect(plan.action).toBe('manual');
+    expect(plan.instructions).toContain('@designless/annotate/vue');
+    expect(plan.instructions).toContain('designlessVue');
+    expect(planWiring(BASELINE.vue, "import designlessVue from '@designless/annotate/vue'").action).toBe('already-wired');
+  });
+
+  it('Qwik emits a manual Vite-plugin snippet with its own import', () => {
+    const plan = planWiring(BASELINE.qwik, 'export default defineConfig({ plugins: [qwikVite()] })', 'vite.config.ts');
+    expect(plan.action).toBe('manual');
+    expect(plan.instructions).toContain('@designless/annotate/qwik');
+    expect(plan.instructions).toContain('designlessQwik');
+    expect(planWiring(BASELINE.qwik, "import designlessQwik from '@designless/annotate/qwik'").action).toBe('already-wired');
+  });
+
+  it('Astro emits a manual integration snippet and is idempotent', () => {
+    const plan = planWiring(BASELINE.astro, 'export default defineConfig({ integrations: [] })', 'astro.config.mjs');
+    expect(plan.action).toBe('manual');
+    expect(plan.instructions).toContain('@designless/annotate/astro');
+    expect(plan.instructions).toContain('integrations:');
+    expect(planWiring(BASELINE.astro, "import designlessAstro from '@designless/annotate/astro'").action).toBe('already-wired');
+  });
+});
+
 describe('doctorReport', () => {
   it('is green only when installed + wired (and wasm present for the SWC engine)', () => {
     const green = doctorReport(BASELINE.next, { installed: true, wasmPresent: true, configWired: true, engine: 'swc' });
@@ -114,12 +190,18 @@ describe('the canonical CDN manifest stays in sync with the baked baseline', () 
   // The published manifest (cdn/annotate/capabilities.v1.json) is the source of
   // truth; the package baseline is its offline mirror. They must not drift, or
   // an offline user and an online user would get different wiring.
-  it('cdn/annotate/capabilities.v1.json merges to exactly the baseline', async () => {
+  it('cdn/annotate/capabilities.v1.json merges to exactly the baseline (every framework)', async () => {
     const fs = await import('node:fs');
     const url = new URL('../../cdn/annotate/capabilities.v1.json', import.meta.url);
     const manifest = JSON.parse(fs.readFileSync(url, 'utf8'));
     const merged = mergeCapabilities(BASELINE, manifest);
-    expect(merged.next).toEqual(BASELINE.next);
-    expect(merged.vite).toEqual(BASELINE.vite);
+    // Every baked-in framework must be declared in the canonical manifest and
+    // merge back to exactly the baseline (no drift, in either direction).
+    for (const key of Object.keys(BASELINE)) {
+      expect(manifest.frameworks[key], `manifest is missing "${key}"`).toBeTruthy();
+      expect(merged[key]).toEqual(BASELINE[key]);
+    }
+    // ...and the manifest declares no framework the baseline doesn't know.
+    expect(Object.keys(manifest.frameworks).sort()).toEqual(Object.keys(BASELINE).sort());
   });
 });

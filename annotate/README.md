@@ -29,7 +29,7 @@ Components are skipped. Already-marked elements are skipped. That is the whole c
 The one-liner does it for you:
 
 ```bash
-npm create designless@latest -- next   # or: vite
+npm create designless@latest -- next   # or: vite, svelte, vue, astro, qwik
 ```
 
 Or wire it yourself.
@@ -47,6 +47,39 @@ module.exports = withDesignless({ /* your config */ })
 import react from '@vitejs/plugin-react'
 export default { plugins: [react({ babel: { plugins: ['@designless/annotate/babel'] } })] }
 ```
+
+**Svelte / SvelteKit** (`svelte.config.js`):
+
+```js
+import designlessAnnotate from '@designless/annotate/svelte'
+export default { preprocess: [designlessAnnotate()] }
+```
+
+**Vue** (`vite.config.js`):
+
+```js
+import vue from '@vitejs/plugin-vue'
+import designlessVue from '@designless/annotate/vue'
+export default { plugins: [designlessVue(), vue()] }
+```
+
+**Astro** (`astro.config.mjs`):
+
+```js
+import { defineConfig } from 'astro/config'
+import designlessAstro from '@designless/annotate/astro'
+export default defineConfig({ integrations: [designlessAstro()] })
+```
+
+**Qwik** (`vite.config.ts`):
+
+```js
+import { qwikVite } from '@builder.io/qwik/optimizer'
+import designlessQwik from '@designless/annotate/qwik'
+export default { plugins: [designlessQwik(), qwikVite()] }
+```
+
+Each engine reads the same frozen marker contract, so a stamped `<div>` looks identical no matter which framework produced it.
 
 ## Scope
 

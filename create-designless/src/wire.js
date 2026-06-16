@@ -51,6 +51,31 @@ function svelteManual(configFileName) {
   ].join('\n');
 }
 
+function vitePluginManual(entry, configFileName) {
+  const imp = (entry.wire && entry.wire.import) || '@designless/annotate';
+  const dflt = (entry.wire && entry.wire.default) || 'designlessAnnotate';
+  return [
+    `Add the Designless Vite plugin to ${configFileName || 'vite.config.js'}:`,
+    '',
+    `  import ${dflt} from '${imp}'`,
+    '  // inside defineConfig({ plugins: [ ... ] }), PREPEND it (it self-orders',
+    "  // with enforce: 'pre', so position is not critical):",
+    `  plugins: [${dflt}(), /* ...your existing plugins... */],`,
+  ].join('\n');
+}
+
+function astroManual(entry, configFileName) {
+  const imp = (entry.wire && entry.wire.import) || '@designless/annotate/astro';
+  const dflt = (entry.wire && entry.wire.default) || 'designlessAstro';
+  return [
+    `Add the Designless integration to ${configFileName || 'astro.config.mjs'}:`,
+    '',
+    `  import ${dflt} from '${imp}'`,
+    '  // inside defineConfig({ integrations: [ ... ] }):',
+    `  integrations: [${dflt}(), /* ...your existing integrations... */],`,
+  ].join('\n');
+}
+
 /**
  * @param {object} entry - capability entry (capabilities.js)
  * @param {string} content - current config file content ('' if absent)
@@ -98,7 +123,20 @@ function planWiring(entry, content, configFileName) {
     return { action: 'manual', instructions: svelteManual(configFileName) };
   }
 
+  if (entry.wire && entry.wire.kind === 'vite-plugin') {
+    // Vue + Qwik: a Vite plugin in the plugins array. Plugin-array editing is
+    // shape-dependent (defineConfig form, existing plugins), so emit an honest
+    // manual snippet — the doctor confirms it landed. Mirrors the vite path.
+    if (src.includes(entry.wire.import)) return { action: 'already-wired' };
+    return { action: 'manual', instructions: vitePluginManual(entry, configFileName) };
+  }
+
+  if (entry.wire && entry.wire.kind === 'astro-integration') {
+    if (src.includes(entry.wire.import)) return { action: 'already-wired' };
+    return { action: 'manual', instructions: astroManual(entry, configFileName) };
+  }
+
   return { action: 'manual', instructions: `Unsupported framework wiring for ${PACKAGE}.` };
 }
 
-module.exports = { planWiring, nextManual, viteManual, svelteManual };
+module.exports = { planWiring, nextManual, viteManual, svelteManual, vitePluginManual, astroManual };

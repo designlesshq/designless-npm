@@ -20,25 +20,48 @@ const path = require('path');
  * @param {object} capabilities - from capabilities.js
  * @param {{ deps: Set<string>, files: Set<string> }} facts
  * @returns {{ entry: object, via: 'dep'|'config' }|null}
+ *
+ * Detection order is deliberate. Some frameworks own a UNIQUE config file
+ * (next.config, astro.config, svelte.config) - that is the strongest, least
+ * ambiguous signal, so it is checked first. The Vite family (Vite-React, Vue,
+ * Qwik) all share `vite.config`, so a config hit there can't tell them apart;
+ * the DEPENDENCY is the disambiguator (a Vue/Qwik project also carries `vite`,
+ * never the reverse), so deps are checked next, most-specific framework first,
+ * with plain Vite-React as the fallback. `vite.config` alone (no framework dep)
+ * falls back to Vite-React last.
  */
 function classifyFramework(capabilities, facts) {
   const deps = facts && facts.deps instanceof Set ? facts.deps : new Set();
   const files = facts && facts.files instanceof Set ? facts.files : new Set();
-  // A config-file hit is the strongest signal (a real project of that
-  // framework), then a dependency hit. Check Next before Vite: a Next project
-  // can carry vite-ish transitive deps, never the reverse config file.
-  const order = ['next', 'vite'];
-  for (const key of order) {
-    const entry = capabilities[key];
-    if (!entry || !entry.detect) continue;
-    if ((entry.detect.config || []).some((f) => files.has(f))) return { entry, via: 'config' };
+
+  const hitConfig = (key) => {
+    const e = capabilities[key];
+    return e && e.detect && (e.detect.config || []).some((f) => files.has(f)) ? { entry: e, via: 'config' } : null;
+  };
+  const hitDep = (key) => {
+    const e = capabilities[key];
+    return e && e.detect && (e.detect.dep || []).some((d) => deps.has(d)) ? { entry: e, via: 'dep' } : null;
+  };
+
+  // 1. Frameworks with a unique config file (unambiguous, the strongest signal).
+  for (const key of ['next', 'astro', 'svelte']) {
+    const hit = hitConfig(key);
+    if (hit) return hit;
   }
-  for (const key of order) {
-    const entry = capabilities[key];
-    if (!entry || !entry.detect) continue;
-    if ((entry.detect.dep || []).some((d) => deps.has(d))) return { entry, via: 'dep' };
+  // 2. A framework-SPECIFIC dependency - every framework except plain
+  //    Vite-React, whose `vite`/@vitejs/plugin-react dep is too generic to
+  //    outrank a real config file. This is the only way to tell Vue/Qwik apart
+  //    on a shared vite.config; Next/Astro/Svelte by dep are a backstop for when
+  //    their config file is absent.
+  for (const key of ['next', 'astro', 'svelte', 'vue', 'qwik']) {
+    const hit = hitDep(key);
+    if (hit) return hit;
   }
-  return null;
+  // 3. The shared vite.config -> Vite-React (a real config beats a bare dep).
+  const viteByConfig = hitConfig('vite');
+  if (viteByConfig) return viteByConfig;
+  // 4. A bare Vite dependency with no config file.
+  return hitDep('vite');
 }
 
 /** Read package.json dependency names (all dependency buckets). */

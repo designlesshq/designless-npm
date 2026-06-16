@@ -64,7 +64,10 @@ function isWasmPresent(projectDir) {
 
 /** Does the config file reference our wrapper/plugin? */
 function isConfigWired(entry, projectDir) {
-  const needle = entry.engine === 'swc' ? 'withDesignless' : '@designless/annotate/babel';
+  // Every engine's wired config contains its own subpath import
+  // (@designless/annotate/<engine>); that is the reliable needle. (Next also
+  // contains `withDesignless`, but the import string is present there too.)
+  const needle = (entry.wire && entry.wire.import) || 'withDesignless';
   for (const f of (entry.detect && entry.detect.config) || []) {
     try {
       const p = path.join(projectDir, f);

@@ -13,9 +13,11 @@
  * fraction of the cost. Runtime behaviour (does the plugin actually stamp under
  * Turbopack) is covered separately by the real-Next CI job.
  *
- * Axes: framework (next/vite) × config-file variant (.js/.mjs/.ts) × signal
- * (config-hit vs dep-only) × dependency bucket × monorepo nesting × precedence
- * (next-before-vite, config-beats-dep) × negatives (fail-open to null).
+ * Axes: framework (next/vite/svelte/vue/astro/qwik) × config-file variant
+ * (.js/.mjs/.ts) × signal (config-hit vs dep-only) × dependency bucket ×
+ * monorepo nesting × precedence (next-before-vite, config-beats-dep,
+ * vue/qwik-dep-disambiguates-the-shared-vite.config) × negatives (fail-open to
+ * null).
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -67,6 +69,34 @@ describe('detection matrix · framework × config-file variant (config-hit)', ()
       expect(r?.via).toBe('config');
     });
   }
+});
+
+describe('detection matrix · Svelte / Vue / Astro / Qwik (real on-disk fixtures)', () => {
+  it('Svelte via svelte.config.js → svelte / config', () => {
+    const r = detect(project({ pkg: { devDependencies: { svelte: '^5', '@sveltejs/kit': '^2' } }, files: ['svelte.config.js'] }));
+    expect(r?.entry.id).toBe('svelte');
+    expect(r?.via).toBe('config');
+  });
+  it('Astro via astro.config.mjs → astro / config', () => {
+    const r = detect(project({ pkg: { dependencies: { astro: '^4' } }, files: ['astro.config.mjs'] }));
+    expect(r?.entry.id).toBe('astro');
+    expect(r?.via).toBe('config');
+  });
+  it('Vue on a shared vite.config is disambiguated by its dependency → vue / dep', () => {
+    const r = detect(project({ pkg: { dependencies: { vue: '^3' }, devDependencies: { vite: '^5', '@vitejs/plugin-vue': '^5' } }, files: ['vite.config.ts'] }));
+    expect(r?.entry.id).toBe('vue');
+    expect(r?.via).toBe('dep');
+  });
+  it('Qwik on a shared vite.config is disambiguated by its dependency → qwik / dep', () => {
+    const r = detect(project({ pkg: { devDependencies: { '@builder.io/qwik': '^1', vite: '^5' } }, files: ['vite.config.ts'] }));
+    expect(r?.entry.id).toBe('qwik');
+    expect(r?.via).toBe('dep');
+  });
+  it('Vite-React keeps the shared vite.config when no framework dep is present → vite / config', () => {
+    const r = detect(project({ pkg: { devDependencies: { vite: '^5', '@vitejs/plugin-react': '^4' } }, files: ['vite.config.ts'] }));
+    expect(r?.entry.id).toBe('vite');
+    expect(r?.via).toBe('config');
+  });
 });
 
 describe('detection matrix · dependency-only (no config file)', () => {
