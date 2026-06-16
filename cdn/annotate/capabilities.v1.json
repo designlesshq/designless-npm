@@ -31,6 +31,20 @@
         "kind": "vite-babel",
         "import": "@designless/annotate/babel"
       }
+    },
+    "svelte": {
+      "id": "svelte",
+      "label": "Svelte / SvelteKit",
+      "aliases": ["sveltekit", "svelte-kit", "svelte.js"],
+      "engine": "svelte",
+      "detect": {
+        "dep": ["svelte", "@sveltejs/kit"],
+        "config": ["svelte.config.js", "svelte.config.mjs"]
+      },
+      "wire": {
+        "kind": "svelte-preprocess",
+        "import": "@designless/annotate/svelte"
+      }
     }
   }
 }

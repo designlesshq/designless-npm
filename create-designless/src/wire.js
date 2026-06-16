@@ -41,6 +41,16 @@ function viteManual(configFileName) {
   ].join('\n');
 }
 
+function svelteManual(configFileName) {
+  return [
+    `Add the Designless preprocessor to ${configFileName || 'svelte.config.js'}:`,
+    '',
+    "  import designlessAnnotate from '@designless/annotate/svelte'",
+    '  // inside the config, PREPEND it so it marks the authored source first:',
+    '  preprocess: [designlessAnnotate(), /* ...your existing preprocessors... */],',
+  ].join('\n');
+}
+
 /**
  * @param {object} entry - capability entry (capabilities.js)
  * @param {string} content - current config file content ('' if absent)
@@ -80,7 +90,15 @@ function planWiring(entry, content, configFileName) {
     return { action: 'manual', instructions: viteManual(configFileName) };
   }
 
+  if (entry.wire && entry.wire.kind === 'svelte-preprocess') {
+    if (src.includes('@designless/annotate/svelte')) return { action: 'already-wired' };
+    // svelte.config.js preprocess-array editing is shape-dependent (CJS/ESM,
+    // existing preprocessors like vitePreprocess) — honest manual snippet, the
+    // doctor confirms it landed. Mirrors the vite path.
+    return { action: 'manual', instructions: svelteManual(configFileName) };
+  }
+
   return { action: 'manual', instructions: `Unsupported framework wiring for ${PACKAGE}.` };
 }
 
-module.exports = { planWiring, nextManual, viteManual };
+module.exports = { planWiring, nextManual, viteManual, svelteManual };
