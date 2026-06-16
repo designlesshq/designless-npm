@@ -14,7 +14,9 @@ describe('capabilities', () => {
     expect(frameworkByToken(BASELINE, 'next').id).toBe('next');
     expect(frameworkByToken(BASELINE, 'nextjs').id).toBe('next');
     expect(frameworkByToken(BASELINE, 'react').id).toBe('vite');
-    expect(frameworkByToken(BASELINE, 'svelte')).toBe(null);
+    expect(frameworkByToken(BASELINE, 'svelte').id).toBe('svelte');
+    expect(frameworkByToken(BASELINE, 'sveltekit').id).toBe('svelte');
+    expect(frameworkByToken(BASELINE, 'angular')).toBe(null);
     expect(frameworkByToken(BASELINE, '')).toBe(null);
   });
 

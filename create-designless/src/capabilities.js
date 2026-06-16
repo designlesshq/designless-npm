@@ -36,6 +36,15 @@ const BASELINE = Object.freeze({
     // Add the babel plugin to @vitejs/plugin-react({ babel: { plugins: [...] } }).
     wire: { kind: 'vite-babel', import: "@designless/annotate/babel" },
   },
+  svelte: {
+    id: 'svelte',
+    label: 'Svelte / SvelteKit',
+    aliases: ['sveltekit', 'svelte-kit', 'svelte.js'],
+    engine: 'svelte',
+    detect: { dep: ['svelte', '@sveltejs/kit'], config: ['svelte.config.js', 'svelte.config.mjs'] },
+    // Prepend the markup preprocessor to svelte.config.js `preprocess: [...]`.
+    wire: { kind: 'svelte-preprocess', import: "@designless/annotate/svelte" },
+  },
 });
 
 const DEFAULT_MANIFEST_URL = 'https://cdn.designless.app/annotate/capabilities.v1.json';

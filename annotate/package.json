@@ -17,6 +17,7 @@
     "swc-plugin",
     "next",
     "vite",
+    "svelte",
     "source-maps",
     "dev"
   ],
@@ -26,6 +27,7 @@
     ".": "./src/index.js",
     "./babel": "./src/babel.js",
     "./next": "./src/next.js",
+    "./svelte": "./src/svelte.js",
     "./contract": "./src/contract.js",
     "./swc/annotate.wasm": "./swc-plugin/annotate.wasm",
     "./package.json": "./package.json"
@@ -43,6 +45,7 @@
     "@babel/core": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
     "@swc/core": "^1.15.41",
+    "svelte": "^5.56.3",
     "vitest": "^2.1.9"
   }
 }
