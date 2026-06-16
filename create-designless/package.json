@@ -1,6 +1,6 @@
 {
   "name": "create-designless",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Wire @designless/annotate into a Next.js or Vite-React project so Designless can route a rendered element back to its source line. One command, dev-only, reversible.",
   "homepage": "https://designless.app",
   "license": "Apache-2.0",
