@@ -1,0 +1,53 @@
+{
+  "name": "@designless/dev-auth",
+  "version": "0.1.0",
+  "description": "Dev-only, fail-closed receiver: reads two headers the Designless desktop app injects during a capture and stands up a request-scoped { role }. No network, no telemetry, no auth-model logic.",
+  "homepage": "https://designless.app",
+  "license": "Apache-2.0",
+  "author": "Designless Private Limited <hello@designless.app>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/designlesshq/designless-npm.git",
+    "directory": "dev-auth"
+  },
+  "bugs": "https://github.com/designlesshq/designless-npm/issues",
+  "keywords": [
+    "designless",
+    "dev",
+    "auth",
+    "express",
+    "svelte",
+    "sveltekit",
+    "nuxt",
+    "nitro",
+    "next",
+    "fail-closed"
+  ],
+  "type": "commonjs",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./express": "./src/express.js",
+    "./svelte": "./src/svelte.js",
+    "./nuxt": "./src/nuxt.js",
+    "./next": "./src/next.js",
+    "./contract": "./src/contract.js",
+    "./gate": "./src/gate.js",
+    "./guard": "./src/guard.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}
