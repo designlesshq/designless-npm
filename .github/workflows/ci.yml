@@ -44,6 +44,12 @@ jobs:
           npm install --no-audit --no-fund
           npx vitest run
 
+      - name: '@designless/dev-auth — JS tests (fail-closed receiver)'
+        working-directory: dev-auth
+        run: |
+          npm install --no-audit --no-fund
+          npx vitest run
+
       - name: Upload wasm artifact
         uses: actions/upload-artifact@v4
         with:
