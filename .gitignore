@@ -37,3 +37,7 @@ scoped-skills/
 /cdn/README.md
 /scripts/release.local.mjs
 RELEASING.local.md
+
+# Build output for @designless/web. The published tarball is built at
+# publish time from src; the compiled files are not source.
+web/dist/
