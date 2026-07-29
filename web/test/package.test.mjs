@@ -1,6 +1,6 @@
 /*
  * Guards on the built artifacts and on the package manifest.
- * Build first: pnpm run build (the package test script does this).
+ * Build first: npm run build (the package test script does this).
  */
 import test from "node:test";
 import assert from "node:assert/strict";
