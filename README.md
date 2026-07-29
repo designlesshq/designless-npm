@@ -6,6 +6,7 @@ Open-source npm packages for connecting a project to [Designless](https://design
 |---------|------------|
 | [`@designless/annotate`](./annotate) | Build-time source markers. The only Designless code that runs in your build: dev-only, zero network, byte-identical in production. |
 | [`create-designless`](./create-designless) | One command to add and wire `@designless/annotate` into a Next.js or Vite-React project. |
+| [`@designless/web`](./web) | Loads your brand on a page at runtime. A typed loader for the hosted script, with no brand data in the package. |
 
 ## Quick start
 

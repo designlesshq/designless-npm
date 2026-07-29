@@ -1,0 +1,55 @@
+{
+  "name": "@designless/web",
+  "version": "0.1.0",
+  "description": "Load your brand on any site with one call. Adds the designless.js script tag and returns a typed handle once it is ready.",
+  "license": "Apache-2.0",
+  "homepage": "https://designless.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/designlesshq/designless-npm.git",
+    "directory": "web"
+  },
+  "keywords": [
+    "designless",
+    "brand",
+    "design-tokens",
+    "css-variables",
+    "cdn",
+    "runtime",
+    "sdk",
+    "loader"
+  ],
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --format=esm --target=es2019 --outfile=dist/index.mjs --log-level=warning && esbuild src/index.ts --bundle --format=cjs --target=es2019 --outfile=dist/index.cjs --log-level=warning && tsc -p tsconfig.build.json && node -e \"require('fs').copyFileSync('dist/index.d.ts', 'dist/index.d.cts')\"",
+    "test": "npm run build && node --test test/",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.7",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
