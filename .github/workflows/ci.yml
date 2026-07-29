@@ -50,6 +50,12 @@ jobs:
           npm install --no-audit --no-fund
           npx vitest run
 
+      - name: '@designless/web — build + JS tests (loader, publish manifest)'
+        working-directory: web
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+
       - name: Upload wasm artifact
         uses: actions/upload-artifact@v4
         with:
