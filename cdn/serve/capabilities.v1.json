@@ -1,0 +1,245 @@
+{
+  "schema": "designless-serve-capabilities/v1",
+  "version": "v1",
+  "note": "Framework support for the Designless serve integration: which file a project wires the brand stylesheet into, and in what form. Served statically at https://cdn.designless.app/serve/capabilities.v1.json and fetched at resolve time, merged over a built-in baseline, so support for a new framework ships without a release. A partial, absent or malformed manifest falls back to that baseline and never breaks resolution. Separate from the annotate manifest by design: the two describe different wiring. Generated rather than hand-written, so regenerate instead of editing an entry in place. Public, inert data - no secrets, no engine details.",
+  "frameworks": {
+    "html": {
+      "id": "html",
+      "label": "Plain HTML",
+      "aliases": [
+        "static",
+        "vanilla",
+        "plain",
+        "none"
+      ],
+      "surface": "html-head",
+      "detect": {
+        "dep": [],
+        "config": [
+          "index.html"
+        ]
+      },
+      "wire": {
+        "kind": "html-head",
+        "file": "index.html",
+        "cssForm": "link-tag",
+        "scriptForm": "script-tag",
+        "envVar": null,
+        "hint": "Add inside <head> of every page"
+      }
+    },
+    "nextjs": {
+      "id": "nextjs",
+      "label": "Next.js (App Router)",
+      "aliases": [
+        "next",
+        "next.js",
+        "app-router",
+        "nextjs-app"
+      ],
+      "surface": "react-component",
+      "detect": {
+        "dep": [
+          "next"
+        ],
+        "config": [
+          "next.config.js",
+          "next.config.mjs",
+          "next.config.ts"
+        ],
+        "dir": [
+          "app",
+          "src/app"
+        ]
+      },
+      "wire": {
+        "kind": "next-layout",
+        "file": "app/layout.tsx",
+        "cssForm": "jsx-link",
+        "scriptForm": "next-script",
+        "envVar": "NEXT_PUBLIC_DESIGNLESS_BRAND_ID",
+        "hint": "app/layout.tsx - App Router"
+      }
+    },
+    "nextjs-pages": {
+      "id": "nextjs-pages",
+      "label": "Next.js (Pages Router)",
+      "aliases": [
+        "next-pages",
+        "pages-router",
+        "next.js-pages"
+      ],
+      "surface": "react-component",
+      "detect": {
+        "dep": [
+          "next"
+        ],
+        "config": [
+          "next.config.js",
+          "next.config.mjs",
+          "next.config.ts"
+        ],
+        "dir": [
+          "pages",
+          "src/pages"
+        ]
+      },
+      "wire": {
+        "kind": "next-document",
+        "file": "pages/_document.tsx",
+        "cssForm": "next-document-link",
+        "scriptForm": "next-script",
+        "envVar": "NEXT_PUBLIC_DESIGNLESS_BRAND_ID",
+        "hint": "pages/_document.tsx - Pages Router"
+      }
+    },
+    "vite": {
+      "id": "vite",
+      "label": "Vite",
+      "aliases": [
+        "vite-react",
+        "react",
+        "react-vite",
+        "vitejs"
+      ],
+      "surface": "html-head",
+      "detect": {
+        "dep": [
+          "vite",
+          "@vitejs/plugin-react"
+        ],
+        "config": [
+          "vite.config.js",
+          "vite.config.ts",
+          "vite.config.mjs"
+        ]
+      },
+      "wire": {
+        "kind": "vite-index",
+        "file": "index.html",
+        "cssForm": "link-tag",
+        "scriptForm": "script-tag",
+        "envVar": null,
+        "hint": "index.html - Vite serves this verbatim"
+      }
+    },
+    "vue": {
+      "id": "vue",
+      "label": "Vue (Vite)",
+      "aliases": [
+        "vuejs",
+        "vue3",
+        "vue.js"
+      ],
+      "surface": "html-head",
+      "detect": {
+        "dep": [
+          "vue",
+          "@vitejs/plugin-vue"
+        ],
+        "config": [
+          "vite.config.js",
+          "vite.config.ts",
+          "vite.config.mjs"
+        ]
+      },
+      "wire": {
+        "kind": "vite-index",
+        "file": "index.html",
+        "cssForm": "link-tag",
+        "scriptForm": "script-tag",
+        "envVar": null,
+        "hint": "index.html - Vite serves this verbatim"
+      }
+    },
+    "astro": {
+      "id": "astro",
+      "label": "Astro",
+      "aliases": [
+        "astrojs",
+        "astro.js"
+      ],
+      "surface": "astro-frontmatter",
+      "detect": {
+        "dep": [
+          "astro"
+        ],
+        "config": [
+          "astro.config.mjs",
+          "astro.config.ts",
+          "astro.config.js"
+        ],
+        "dir": [
+          "src"
+        ]
+      },
+      "wire": {
+        "kind": "astro-layout",
+        "file": "src/layouts/Layout.astro",
+        "createIfAbsent": true,
+        "cssForm": "astro-link",
+        "scriptForm": "astro-script",
+        "envVar": "PUBLIC_DESIGNLESS_BRAND_ID",
+        "hint": "src/layouts/Layout.astro"
+      }
+    },
+    "sveltekit": {
+      "id": "sveltekit",
+      "label": "SvelteKit",
+      "aliases": [
+        "svelte",
+        "svelte-kit",
+        "svelte.js"
+      ],
+      "surface": "html-head",
+      "detect": {
+        "dep": [
+          "@sveltejs/kit",
+          "svelte"
+        ],
+        "config": [
+          "svelte.config.js",
+          "svelte.config.mjs"
+        ],
+        "dir": [
+          "src"
+        ]
+      },
+      "wire": {
+        "kind": "sveltekit-shell",
+        "file": "src/app.html",
+        "cssForm": "link-tag",
+        "scriptForm": "script-tag",
+        "envVar": null,
+        "hint": "src/app.html - SvelteKit shell"
+      }
+    },
+    "nuxt": {
+      "id": "nuxt",
+      "label": "Nuxt",
+      "aliases": [
+        "nuxtjs",
+        "nuxt.js"
+      ],
+      "surface": "config-object",
+      "detect": {
+        "dep": [
+          "nuxt"
+        ],
+        "config": [
+          "nuxt.config.ts",
+          "nuxt.config.js",
+          "nuxt.config.mjs"
+        ]
+      },
+      "wire": {
+        "kind": "nuxt-config",
+        "file": "nuxt.config.ts",
+        "cssForm": "nuxt-link-entry",
+        "scriptForm": "nuxt-script-entry",
+        "envVar": "NUXT_PUBLIC_DESIGNLESS_BRAND_ID",
+        "hint": "nuxt.config.ts"
+      }
+    }
+  }
+}
