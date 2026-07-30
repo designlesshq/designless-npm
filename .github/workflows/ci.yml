@@ -56,6 +56,12 @@ jobs:
           npm install --no-audit --no-fund
           npm test
 
+      # No package to install: it is a plain node script over a JSON file, and
+      # it guards a file that reaches users via the CDN rather than via npm, so
+      # nothing else in this workflow would catch a bad edit to it.
+      - name: 'cdn/serve — capabilities manifest is well formed'
+        run: node cdn/validate-serve-manifest.mjs
+
       - name: Upload wasm artifact
         uses: actions/upload-artifact@v4
         with:
