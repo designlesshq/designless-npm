@@ -56,6 +56,21 @@ jobs:
           npm install --no-audit --no-fund
           npm test
 
+      # Typecheck first and separately: a type error and a failing test read
+      # the same in a combined log, and only one of them is a behaviour change.
+      - name: '@designless/react-native: typecheck'
+        working-directory: react-native
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+
+      # `npm test` builds the bundle first and every test runs against the
+      # built dist rather than against src, so this covers the shipped file
+      # set as well as the behaviour.
+      - name: '@designless/react-native: build + JS tests'
+        working-directory: react-native
+        run: npm test
+
       # No package to install: it is a plain node script over a JSON file, and
       # it guards a file that reaches users via the CDN rather than via npm, so
       # nothing else in this workflow would catch a bad edit to it.

@@ -1,0 +1,9 @@
+retry: 3000
+
+event: hello
+data: {"hash":"bb6633ba2c1566eda87141ee9b738c963d4fc5437ec12f9a93cc50ffd75c6619","semver":"1.0.1","version":2}
+
+: hb
+
+: hb
+
