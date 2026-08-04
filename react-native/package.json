@@ -1,0 +1,80 @@
+{
+  "name": "@designless/react-native",
+  "version": "0.1.0",
+  "description": "Your brand in a React Native app. Colours, type, spacing and marks come from your published brand, and change when you publish.",
+  "license": "Apache-2.0",
+  "homepage": "https://designless.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/designlesshq/designless-npm.git",
+    "directory": "react-native"
+  },
+  "keywords": [
+    "designless",
+    "brand",
+    "design-tokens",
+    "react-native",
+    "expo",
+    "theme",
+    "fonts",
+    "cdn",
+    "sdk"
+  ],
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "react-native": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "react-native": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "designless-snapshot": "bin/designless-snapshot.mjs",
+    "designless-fonts": "bin/designless-fonts.mjs"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --format=esm --target=es2019 --outfile=dist/index.mjs --external:react --external:react-native --log-level=warning && esbuild src/index.ts --bundle --format=cjs --target=es2019 --outfile=dist/index.cjs --external:react --external:react-native --log-level=warning && tsc -p tsconfig.build.json && node scripts/declarations.mjs",
+    "test": "npm run build && node --test test/",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-native": ">=0.65.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "esbuild": "^0.27.7",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
