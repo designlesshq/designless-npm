@@ -1,6 +1,6 @@
 {
   "$schema": "designless-tokens/v1",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "appearance": "dark",
   "tokens": {
     "color": {
@@ -184,7 +184,7 @@
       "fontFamily": {
         "body": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         "mono": "'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace",
-        "display": "'Garamond', 'Palatino', 'Book Antiqua', serif"
+        "display": "'EB Garamond', 'Garamond', 'Palatino', 'Book Antiqua', serif"
       },
       "fontWeight": {
         "body": 400,

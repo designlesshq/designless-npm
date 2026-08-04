@@ -40,15 +40,89 @@ function brandWith(tokensFixture, present) {
   return { brand, theme: brand.tokens(), warnings };
 }
 
-test("the two captured payloads open their body list differently", () => {
-  const dark = fixture("tokens.dark.json").tokens.typography.fontFamily;
-  const scoped = fixture("tokens.ios.json").tokens.typography.fontFamily;
-  assert.match(dark.body, /^Inter,/);
-  assert.match(scoped.body, /^-apple-system,/);
+/*
+ * Two of the three token fixtures are captures, one is not, and which is
+ * which decides what a failure here means.
+ *
+ * tokens.dark.json, tokens.light.json and tokens.ios.json were pulled
+ * from https://cdn.designless.app/r/_designless/tokens.json on
+ * 2026-08-04, with ?appearance= and ?platform= as the names say. A
+ * failure against one of those is a report about the live surface.
+ *
+ * tokens.system-first.json is NOT a capture. It was one, until the server
+ * stopped answering that way: its body and mono lists open with a system
+ * name and its display list names a family the brand does not publish.
+ * Both shapes are still legal, a brand can still ask for the platform
+ * font on any role, and the walk still has to handle them. So the file is
+ * kept for the shapes and renamed so it stops claiming to be iOS. A
+ * failure against it is a report about this package only.
+ */
+
+test("every role's list on the captured payloads opens with the family the brand publishes", () => {
+  /*
+   * The agreement this asserts is the server's, not this package's, and
+   * it is asserted from here because this is where breaking it costs
+   * something: a native app registers a face by the name fonts.json
+   * gives it, and can only reach that face if a token stack names it
+   * too. Nothing about a mismatch is visible at runtime. The app renders
+   * in the platform font and carries the unused file in its binary.
+   *
+   * It was broken until 2026-08-04. fonts.json advertised EB Garamond
+   * for display while the stack asked for Garamond, and the ios payload
+   * replaced the body stack with -apple-system outright, naming no brand
+   * face at all. This test is what would have caught it from this side.
+   */
+  const published = fixture("fonts.json").families;
+  for (const name of ["tokens.dark.json", "tokens.light.json", "tokens.ios.json"]) {
+    const stacks = fixture(name).tokens.typography.fontFamily;
+    for (const family of published) {
+      for (const role of family.roles) {
+        const stack = stacks[role];
+        assert.ok(stack, `${name}: no ${role} stack to check`);
+        const head = stack.split(",")[0].trim().replace(/^['"]|['"]$/g, "");
+        assert.equal(
+          head,
+          family.family,
+          `${name}: the ${role} list opens with "${head}" while fonts.json ` +
+            `publishes "${family.family}" for that role, so the face the app ` +
+            `registers is never asked for`,
+        );
+      }
+    }
+  }
+});
+
+test("a captured iOS payload keeps the native stack behind the brand family", () => {
+  /* The brand family goes in FRONT of the platform's own stack, it does
+   * not replace it. An app whose font registration failed still lands on
+   * SF Pro rather than on a web stack it has no files for. */
+  const ios = fixture("tokens.ios.json").tokens.typography.fontFamily;
+  assert.match(ios.body, /^Inter,/);
+  assert.ok(
+    ios.body.includes("-apple-system"),
+    `the iOS body list dropped its native fallback: ${ios.body}`,
+  );
+  assert.match(ios.mono, /^'JetBrains Mono',/);
+  assert.ok(ios.mono.includes("Menlo"), `the iOS mono list lost its tail: ${ios.mono}`);
+});
+
+test("the hand-held payload opens its body list with a system name", () => {
+  /* The premise every system-font case below depends on. If this file
+   * ever stops having that shape, those tests pass without exercising
+   * anything, so it is asserted once here rather than assumed four
+   * times. */
+  const held = fixture("tokens.system-first.json").tokens.typography.fontFamily;
+  assert.match(held.body, /^-apple-system,/);
   assert.equal(
-    /Inter/.test(scoped.body),
+    /Inter/.test(held.body),
     false,
     "a list that opens with a system name names no brand face at all",
+  );
+  assert.match(held.display, /^'Garamond',/);
+  assert.equal(
+    /EB Garamond/.test(held.display),
+    false,
+    "the display list has to name something other than the published family",
   );
 });
 
@@ -60,6 +134,32 @@ test("the brand face wins when the build contains it", () => {
     style.fontWeight,
     undefined,
     "a weight beside a resolved face invites a bold face being thickened again",
+  );
+  brand.destroy();
+});
+
+test("the iOS payload resolves to the brand's own faces, not the platform's", () => {
+  /*
+   * The whole point of the platform arm carrying the brand family. An
+   * iPhone build that registered Inter and EB Garamond gets them; before
+   * 2026-08-04 the same build got SF Pro on body and SF Mono on mono,
+   * with the registered files sitting unused in the binary.
+   *
+   * Driven through the resolver rather than read off the fixture,
+   * because naming the family and reaching the face are two different
+   * things and only the second one puts type on a screen.
+   */
+  const { brand, theme, warnings } = brandWith("tokens.ios.json", EVERYTHING);
+  assert.equal(theme.text({ family: "body" }).fontFamily, "Inter-Regular");
+  assert.equal(
+    theme.text({ family: "display", weight: "heading" }).fontFamily,
+    "EBGaramond-SemiBold",
+  );
+  assert.equal(theme.text({ family: "mono" }).fontFamily, "JetBrainsMono-Regular");
+  assert.equal(
+    warnings.filter((l) => l.includes("role uses")).length,
+    0,
+    "nothing was missing, so nothing is reported",
   );
   brand.destroy();
 });
@@ -99,7 +199,7 @@ test("nothing is said outside a development build", () => {
 });
 
 test("a list opening with a system name stops there, whatever is bundled", () => {
-  const { brand, theme, warnings } = brandWith("tokens.ios.json", EVERYTHING);
+  const { brand, theme, warnings } = brandWith("tokens.system-first.json", EVERYTHING);
   const style = theme.text({ family: "body", weight: "heading" });
   assert.equal(style.fontFamily, undefined);
   assert.equal(style.fontWeight, "600");
@@ -113,13 +213,19 @@ test("a list opening with a system name stops there, whatever is bundled", () =>
 
 test("a bundled face is used even when the list never names it", () => {
   /*
-   * The published list for display reads Garamond, Palatino, Book Antiqua,
-   * serif, and none of those is the family the brand publishes, which is
-   * EB Garamond. The list is a browser's list. The font list is the fact,
-   * and it says EB Garamond fills the display role, so the file this build
-   * carries is used rather than thrown away for a serif.
+   * The display list here reads Garamond, Palatino, Book Antiqua, serif,
+   * and none of those is the family the brand publishes, which is EB
+   * Garamond. The list is a browser's list. The font list is the fact,
+   * and it says EB Garamond fills the display role, so the file this
+   * build carries is used rather than thrown away for a serif.
+   *
+   * This used to run against a real capture, because the server used to
+   * send exactly that disagreement. It does not any more, so the case
+   * runs against the hand-held payload instead. The disagreement is
+   * still reachable — a brand can name any family it likes in a stack —
+   * and this is the behaviour that keeps it from costing anything.
    */
-  const { brand, theme, warnings } = brandWith("tokens.dark.json", EVERYTHING);
+  const { brand, theme, warnings } = brandWith("tokens.system-first.json", EVERYTHING);
   const display = theme.text({ family: "display", weight: "heading" });
   assert.equal(display.fontFamily, "EBGaramond-SemiBold");
   assert.equal(
@@ -156,7 +262,7 @@ test("asking for the platform font is not overridden, and is per role", () => {
    * same payload asks for it on two roles and not on the third, so the
    * answer has to be worked out a role at a time.
    */
-  const { brand, theme, warnings } = brandWith("tokens.ios.json", EVERYTHING);
+  const { brand, theme, warnings } = brandWith("tokens.system-first.json", EVERYTHING);
   assert.equal(theme.text({ family: "body" }).fontFamily, undefined);
   assert.equal(theme.text({ family: "mono" }).fontFamily, undefined);
   assert.equal(

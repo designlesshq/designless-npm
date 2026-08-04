@@ -1,6 +1,6 @@
 {
   "$schema": "designless-tokens/v1",
-  "version": "1.0.3",
+  "version": "1.0.1",
   "appearance": "dark",
   "tokens": {
     "color": {
@@ -182,9 +182,9 @@
         "2xl": "1.746rem"
       },
       "fontFamily": {
-        "body": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif",
-        "mono": "'JetBrains Mono', SF Mono, Menlo, monospace",
-        "display": "'EB Garamond', 'Garamond', 'Palatino', 'Book Antiqua', serif"
+        "body": "-apple-system, SF Pro Text, system-ui, sans-serif",
+        "mono": "SF Mono, Menlo, monospace",
+        "display": "'Garamond', 'Palatino', 'Book Antiqua', serif"
       },
       "fontWeight": {
         "body": 400,
@@ -438,7 +438,7 @@
         },
         "font": {
           "size": "0.910rem",
-          "family": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif",
+          "family": "-apple-system, SF Pro Text, system-ui, sans-serif",
           "weight": 500
         }
       },
@@ -497,7 +497,7 @@
             "xs": "0.657rem",
             "2xl": "1.746rem"
           },
-          "family": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif",
+          "family": "-apple-system, SF Pro Text, system-ui, sans-serif",
           "weight": {
             "bold": 600,
             "medium": 500,
@@ -578,7 +578,7 @@
       "badge": {
         "font": {
           "size": "0.773rem",
-          "family": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif",
+          "family": "-apple-system, SF Pro Text, system-ui, sans-serif",
           "weight": 500
         },
         "radius": "624.9375rem",
@@ -659,7 +659,7 @@
             "md": "0.910rem",
             "sm": "0.773rem"
           },
-          "family": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif"
+          "family": "-apple-system, SF Pro Text, system-ui, sans-serif"
         },
         "error": {
           "ring": {
@@ -734,7 +734,7 @@
         },
         "font": {
           "size": "0.773rem",
-          "family": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif"
+          "family": "-apple-system, SF Pro Text, system-ui, sans-serif"
         },
         "border": {
           "color": {
@@ -799,7 +799,7 @@
             "md": "0.910rem",
             "sm": "0.773rem"
           },
-          "family": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif",
+          "family": "-apple-system, SF Pro Text, system-ui, sans-serif",
           "weight": 500
         },
         "icon": {
@@ -965,7 +965,7 @@
         "gap": "0.375rem",
         "font": {
           "size": "0.773rem",
-          "family": "Inter, -apple-system, SF Pro Text, system-ui, sans-serif",
+          "family": "-apple-system, SF Pro Text, system-ui, sans-serif",
           "weight": {
             "current": 500,
             "default": 400
