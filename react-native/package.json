@@ -62,7 +62,8 @@
   "scripts": {
     "build": "esbuild src/index.ts --bundle --format=esm --target=es2019 --outfile=dist/index.mjs --external:react --external:react-native --log-level=warning && esbuild src/index.ts --bundle --format=cjs --target=es2019 --outfile=dist/index.cjs --external:react --external:react-native --log-level=warning && tsc -p tsconfig.build.json && node scripts/declarations.mjs",
     "test": "npm run build && node --test test/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test"
   },
   "peerDependencies": {
     "react": ">=17.0.0",
