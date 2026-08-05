@@ -367,7 +367,6 @@
       "detect": {
         "config": [
           "Package.swift",
-          "Podfile",
           "Info.plist"
         ],
         "dir": [
@@ -386,6 +385,40 @@
           "file": "Package.swift",
           "code": ".package(url: \"https://github.com/designlesshq/designless-swift.git\", from: \"0.1.0\")",
           "hint": "Add to dependencies and add \"DesignlessKit\" to your target, or in an Xcode project with no Package.swift use File > Add Package Dependencies with the same URL"
+        },
+        "verifyPath": "context.json",
+        "needle": "DesignlessKit",
+        "runtimeCheck": "in the running app, await brand.tokens is non-nil after initialize() returns"
+      }
+    },
+    "ios-cocoapods": {
+      "id": "ios-cocoapods",
+      "label": "iOS (CocoaPods)",
+      "aliases": [
+        "cocoapods",
+        "podfile",
+        "ios-pods",
+        "swift-cocoapods"
+      ],
+      "surface": "swift-app",
+      "native": true,
+      "detect": {
+        "config": [
+          "Podfile"
+        ]
+      },
+      "wire": {
+        "kind": "swift-app",
+        "file": "App.swift",
+        "cssForm": "swift-app",
+        "scriptForm": "swift-app",
+        "envVar": null,
+        "hint": "your @main App struct",
+        "install": {
+          "kind": "manifest-edit",
+          "file": "Podfile",
+          "code": "pod 'DesignlessKit', '~> 0.1.0'",
+          "hint": "Add inside your app target, then run pod install"
         },
         "verifyPath": "context.json",
         "needle": "DesignlessKit",
