@@ -3,7 +3,7 @@
  * Validates cdn/serve/capabilities.v1.json before it is published.
  *
  * The manifest is generated rather than hand-written, so this exists to catch
- * an edit made in place. It checks four things:
+ * an edit made in place. It checks six things:
  *
  *   1. schema and shape, so a truncated or half-written file fails here rather
  *      than degrading quietly once it is served;
@@ -12,7 +12,12 @@
  *   3. no alias is claimed by two entries, because resolution takes the first
  *      match and a duplicate would make the winner depend on ordering;
  *   4. every wired file is justified by that entry's own detect rules, so an
- *      entry never names a path with no evidence the project has it.
+ *      entry never names a path with no evidence the project has it;
+ *   5. an entry that wires an app build rather than a document declares the
+ *      package to install and the string that proves the wiring landed, since
+ *      neither can be derived the way a web entry's can;
+ *   6. the key sets are closed at every level, so a field that reaches every
+ *      consumer is one somebody added on purpose.
  *
  * Exit 1 on any failure. Run: node cdn/validate-serve-manifest.mjs
  */
@@ -49,10 +54,33 @@ if (entries.length === 0) fail('frameworks is empty; a manifest that adds nothin
 
 const seenAlias = new Map();
 
+// Closed key sets, for the same reason the top level is closed further down: a
+// key here reaches every consumer, and one the client does not read is dead
+// weight that still ships. Extending either list is a deliberate edit.
+const ALLOWED_ENTRY_KEYS = ['id', 'label', 'aliases', 'surface', 'native', 'detect', 'wire'];
+const ALLOWED_WIRE_KEYS = [
+  'kind',
+  'file',
+  'createIfAbsent',
+  'cssForm',
+  'scriptForm',
+  'envVar',
+  'hint',
+  'install',
+  'verifyPath',
+  'needle',
+  'runtimeCheck',
+];
+const ALLOWED_INSTALL_KEYS = ['kind', 'manager', 'command', 'file', 'code', 'hint'];
+
 for (const [key, e] of entries) {
   const at = `frameworks.${key}`;
   if (e.id !== key) fail(`${at}: id ${JSON.stringify(e.id)} does not match its key`);
   if (!e.label) fail(`${at}: label is required`);
+
+  for (const k of Object.keys(e)) {
+    if (!ALLOWED_ENTRY_KEYS.includes(k)) fail(`${at}: unexpected key "${k}"`);
+  }
 
   const wire = e.wire;
   if (!wire || typeof wire !== 'object') {
@@ -62,6 +90,35 @@ for (const [key, e] of entries) {
   if (!wire.file) fail(`${at}: wire.file is required`);
   if (!wire.cssForm) fail(`${at}: wire.cssForm is required`);
   if (!wire.scriptForm) fail(`${at}: wire.scriptForm is required`);
+
+  for (const k of Object.keys(wire)) {
+    if (!ALLOWED_WIRE_KEYS.includes(k)) fail(`${at}.wire: unexpected key "${k}"`);
+  }
+
+  // A native entry wires an app build rather than a document, and the client
+  // derives its check-1 needle from a URL — which a native snippet does not
+  // contain. Without a declared needle the client would grep a Kotlin file for
+  // a CDN path and report "not wired" forever on a correct integration.
+  if (e.native === true && !wire.needle) {
+    fail(`${at}: a native entry must declare wire.needle; the derived one is a URL`);
+  }
+
+  if (wire.install != null) {
+    const ins = wire.install;
+    const insAt = `${at}.wire.install`;
+    for (const k of Object.keys(ins)) {
+      if (!ALLOWED_INSTALL_KEYS.includes(k)) fail(`${insAt}: unexpected key "${k}"`);
+    }
+    if (ins.kind === 'command') {
+      if (!ins.command) fail(`${insAt}: a command install needs wire.install.command`);
+      if (!ins.manager) fail(`${insAt}: a command install needs wire.install.manager`);
+    } else if (ins.kind === 'manifest-edit') {
+      if (!ins.file) fail(`${insAt}: a manifest edit needs the file it edits`);
+      if (!ins.code) fail(`${insAt}: a manifest edit needs the line to add`);
+    } else {
+      fail(`${insAt}: kind must be "command" or "manifest-edit", got ${JSON.stringify(ins.kind)}`);
+    }
+  }
 
   // Resolution takes the first match, so a duplicate token would make the
   // winner depend on key order.
@@ -120,11 +177,13 @@ for (const [key, e] of entries) {
 
 const EXPECTED_NOTE =
   'Framework support for the Designless serve integration: which file a ' +
-  'project wires the brand stylesheet into, and in what form. Served ' +
-  'statically at https://cdn.designless.app/serve/capabilities.v1.json and ' +
-  'fetched at resolve time, so support for a new framework arrives without ' +
-  "a client release. A partial, absent or malformed copy of this file falls " +
-  "back to the client's own defaults and never breaks resolution.";
+  'project wires a brand into, in what form, and which package to install ' +
+  'first when there is one. Covers web projects and native app builds. ' +
+  'Served statically at https://cdn.designless.app/serve/capabilities.v1.json ' +
+  'and fetched at resolve time, so support for a new framework or a new ' +
+  'package version arrives without a client release. A partial, absent or ' +
+  "malformed copy of this file falls back to the client's own defaults and " +
+  'never breaks resolution.';
 
 if (doc.note !== EXPECTED_NOTE) {
   fail(

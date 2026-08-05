@@ -1,7 +1,7 @@
 {
   "schema": "designless-serve-capabilities/v1",
   "version": "v1",
-  "note": "Framework support for the Designless serve integration: which file a project wires the brand stylesheet into, and in what form. Served statically at https://cdn.designless.app/serve/capabilities.v1.json and fetched at resolve time, so support for a new framework arrives without a client release. A partial, absent or malformed copy of this file falls back to the client's own defaults and never breaks resolution.",
+  "note": "Framework support for the Designless serve integration: which file a project wires a brand into, in what form, and which package to install first when there is one. Covers web projects and native app builds. Served statically at https://cdn.designless.app/serve/capabilities.v1.json and fetched at resolve time, so support for a new framework or a new package version arrives without a client release. A partial, absent or malformed copy of this file falls back to the client's own defaults and never breaks resolution.",
   "frameworks": {
     "html": {
       "id": "html",
@@ -239,6 +239,196 @@
         "scriptForm": "nuxt-script-entry",
         "envVar": "NUXT_PUBLIC_DESIGNLESS_BRAND_ID",
         "hint": "nuxt.config.ts"
+      }
+    },
+    "react-native": {
+      "id": "react-native",
+      "label": "React Native",
+      "aliases": [
+        "reactnative",
+        "rn",
+        "react native"
+      ],
+      "surface": "react-component",
+      "native": true,
+      "detect": {
+        "dep": [
+          "react-native"
+        ],
+        "config": [
+          "metro.config.js",
+          "app.json"
+        ]
+      },
+      "wire": {
+        "kind": "rn-provider",
+        "file": "App.tsx",
+        "cssForm": "rn-provider",
+        "scriptForm": "rn-provider",
+        "envVar": null,
+        "hint": "App.tsx - wrap the app root",
+        "install": {
+          "kind": "command",
+          "manager": "npm",
+          "command": "npm install @designless/react-native"
+        },
+        "verifyPath": "context.json",
+        "needle": "@designless/react-native",
+        "runtimeCheck": "in the running app, useBrandTheme() returns a non-null theme once the brand has resolved"
+      }
+    },
+    "expo": {
+      "id": "expo",
+      "label": "Expo",
+      "aliases": [
+        "expo-router",
+        "expo-go"
+      ],
+      "surface": "react-component",
+      "native": true,
+      "detect": {
+        "dep": [
+          "expo"
+        ],
+        "config": [
+          "app.json",
+          "app.config.js",
+          "app.config.ts"
+        ],
+        "dir": [
+          "app"
+        ]
+      },
+      "wire": {
+        "kind": "rn-provider",
+        "file": "app/_layout.tsx",
+        "cssForm": "rn-provider",
+        "scriptForm": "rn-provider",
+        "envVar": "EXPO_PUBLIC_DESIGNLESS_BRAND_ID",
+        "hint": "app/_layout.tsx - expo-router root layout",
+        "install": {
+          "kind": "command",
+          "manager": "expo",
+          "command": "npx expo install @designless/react-native"
+        },
+        "verifyPath": "context.json",
+        "needle": "@designless/react-native",
+        "runtimeCheck": "in the running app, useBrandTheme() returns a non-null theme once the brand has resolved"
+      }
+    },
+    "flutter": {
+      "id": "flutter",
+      "label": "Flutter",
+      "aliases": [
+        "dart",
+        "flutter-app"
+      ],
+      "surface": "widget-tree",
+      "native": true,
+      "detect": {
+        "dep": [
+          "flutter"
+        ],
+        "config": [
+          "pubspec.yaml"
+        ],
+        "dir": [
+          "lib"
+        ]
+      },
+      "wire": {
+        "kind": "flutter-scope",
+        "file": "lib/main.dart",
+        "cssForm": "flutter-scope",
+        "scriptForm": "flutter-scope",
+        "envVar": null,
+        "hint": "lib/main.dart - wrap the app root",
+        "install": {
+          "kind": "command",
+          "manager": "pub",
+          "command": "flutter pub add designless_serve_flutter http"
+        },
+        "verifyPath": "context.json",
+        "needle": "designless_serve_flutter",
+        "runtimeCheck": "in the running app, BrandScope.of(context).tokens is non-null once the brand has resolved"
+      }
+    },
+    "ios": {
+      "id": "ios",
+      "label": "iOS (Swift)",
+      "aliases": [
+        "swift",
+        "swiftui",
+        "apple",
+        "ios-app"
+      ],
+      "surface": "swift-app",
+      "native": true,
+      "detect": {
+        "config": [
+          "Package.swift",
+          "Podfile",
+          "Info.plist"
+        ],
+        "dir": [
+          "Sources"
+        ]
+      },
+      "wire": {
+        "kind": "swift-app",
+        "file": "App.swift",
+        "cssForm": "swift-app",
+        "scriptForm": "swift-app",
+        "envVar": null,
+        "hint": "your @main App struct",
+        "install": {
+          "kind": "manifest-edit",
+          "file": "Package.swift",
+          "code": ".package(url: \"https://github.com/designlesshq/designless-swift.git\", from: \"0.1.0\")",
+          "hint": "Add to dependencies and add \"DesignlessKit\" to your target, or in an Xcode project with no Package.swift use File > Add Package Dependencies with the same URL"
+        },
+        "verifyPath": "context.json",
+        "needle": "DesignlessKit",
+        "runtimeCheck": "in the running app, await brand.tokens is non-nil after initialize() returns"
+      }
+    },
+    "android": {
+      "id": "android",
+      "label": "Android (Kotlin)",
+      "aliases": [
+        "kotlin",
+        "jetpack",
+        "compose",
+        "android-app"
+      ],
+      "surface": "application-class",
+      "native": true,
+      "detect": {
+        "config": [
+          "build.gradle.kts",
+          "build.gradle",
+          "settings.gradle.kts"
+        ],
+        "dir": [
+          "app/src/main"
+        ]
+      },
+      "wire": {
+        "kind": "kotlin-application",
+        "file": "app/src/main/java/MainApplication.kt",
+        "cssForm": "kotlin-application",
+        "scriptForm": "kotlin-application",
+        "envVar": null,
+        "hint": "your Application subclass, under the app's own package (create one and name it in AndroidManifest.xml if the project has none)",
+        "install": {
+          "kind": "manifest-edit",
+          "file": "app/build.gradle.kts",
+          "code": "implementation(\"io.designless:serve-android:0.1.0\")",
+          "hint": "Add inside the dependencies { } block"
+        },
+        "verifyPath": "context.json",
+        "needle": "io.designless.serve",
+        "runtimeCheck": "in the running app, brand.tokens is non-null after initialize() returns"
       }
     }
   }
