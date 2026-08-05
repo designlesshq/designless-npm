@@ -88,6 +88,49 @@ for (const [key, e] of entries) {
   }
 }
 
+// ── Nothing internal reaches a public file ──────────────────────────────────
+//
+// This manifest is served from a CDN to anyone who asks. It carried a `note`
+// for months containing three sentences written for us rather than for a
+// consumer: a maintainer instruction ("regenerate instead of editing an entry
+// in place"), an internal architecture aside, and a reassurance that it holds
+// "no secrets, no engine details".
+//
+// That last one is the reason this check exists. Telling a reader what is NOT
+// in a document tells them something is being withheld and roughly what shape
+// it has. A public artefact should describe itself to the person using it and
+// say nothing about how it is maintained or what it is keeping back.
+//
+// Checked over the whole serialised file, not just `note`, because the next
+// one will not arrive in the same field.
+
+const INTERNAL_TELLS = [
+  // Maintainer instructions.
+  [/\bregenerate\b/i, 'a maintenance instruction'],
+  [/hand-written|hand-edited|hand-maintained/i, 'a maintenance instruction'],
+  [/\bdo not edit\b|\bgenerated file\b/i, 'a maintenance instruction'],
+  // Reassurance about what is withheld, which advertises that something is.
+  [/no secrets?\b/i, 'a claim about what is withheld'],
+  [/engine details?|internal(s| detail)/i, 'a claim about what is withheld'],
+  [/\bproprietary\b|\bIP-safe\b/i, 'a claim about what is withheld'],
+  // Internal vocabulary that has no meaning to a consumer.
+  [/\bcapsule\b/i, 'internal vocabulary'],
+  [/\bentitlement|\bplan[- ]gate|\btier\b/i, 'internal vocabulary'],
+  [/supabase|razorpay|polar|vercel|prism|loomx/i, 'a vendor or internal system name'],
+];
+
+const serialised = JSON.stringify(doc);
+for (const [pattern, why] of INTERNAL_TELLS) {
+  const hit = serialised.match(pattern);
+  if (hit) {
+    fail(
+      `"${hit[0]}" appears in this public file, which reads as ${why}. ` +
+        `Describe the document to the person using it; say nothing about how ` +
+        `it is maintained or what it withholds.`,
+    );
+  }
+}
+
 if (problems.length > 0) {
   console.error(`serve manifest invalid (${problems.length}):`);
   for (const p of problems) console.error(`  - ${p}`);
