@@ -25,4 +25,6 @@ It never runs a build, never touches your source, and never edits a config it do
 
 After it finishes, start your dev server and open the Designless canvas. Edits you make there route back to your source.
 
-Apache-2.0 · [designless.app](https://designless.app)
+## License
+
+Apache-2.0. Copyright 2026 Designless Private Limited. [designless.io](https://designless.io)

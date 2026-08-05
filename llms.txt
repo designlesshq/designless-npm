@@ -1,0 +1,59 @@
+# Designless packages
+
+> Open-source npm packages for connecting a project to Designless, where you edit your rendered UI and the edits route back to your source.
+
+These are the JavaScript clients for [Designless](https://designless.io), expression infrastructure for coding agents. Four published packages cover two jobs: connecting a project to the Designless canvas so rendered edits find their way back to source, and loading a published brand at runtime on the web and in React Native.
+
+## About Designless
+
+Designless is expression infrastructure: a runtime layer that gives coding agents access to encoded human design judgment, so the software they build carries taste and not just logic.
+
+Design systems ship a file of tokens. You export it, paste it into a codebase, and hope it stays in sync. Expression infrastructure serves design decisions at runtime instead, to the agent, at the moment it builds. Designless calls the gap between what you express and what actually gets built the Expression Gap, and closes it by making the brand available as infrastructure rather than as a document.
+
+## Packages
+
+- **[@designless/annotate](https://www.npmjs.com/package/@designless/annotate)**: build-time source markers. The only Designless code that runs in your build: development-only, zero network, byte-identical production output. It stamps `data-source-file` and `data-source-line` onto host elements so an edit made on the rendered page can find the exact line that produced it. Supports Next.js, Vite + React, Svelte, Vue, Astro and Qwik through one frozen marker contract.
+- **[create-designless](https://www.npmjs.com/package/create-designless)**: one command to add and wire `@designless/annotate` into a Next.js or Vite-React project. It never runs a build, never touches your source, and never edits a config it does not fully understand.
+- **[@designless/web](https://www.npmjs.com/package/@designless/web)**: loads your brand on a page at runtime. A typed loader for the hosted script, with no brand data in the package. Safe to import on the server.
+- **[@designless/react-native](https://www.npmjs.com/package/@designless/react-native)**: loads your brand in a React Native app. Tokens, marks and fonts, mapped to the types React Native draws with.
+
+`@designless/dev-auth` is a dev-only, fail-closed receiver used when capturing routes that only render for a signed-in user. It is installed on a throwaway worktree for a capture and reverted, never committed to a default branch.
+
+## Quick start
+
+```bash
+npm create designless@latest -- next     # or: vite
+```
+
+Then start your dev server and open the Designless canvas.
+
+## What runs in your build
+
+Only `@designless/annotate`, in development. It adds `data-source-*` attributes to host elements and does nothing else: no network calls on any build path, no configuration, no change to production output.
+
+## Key concepts
+
+- **Expression Infrastructure**: the runtime layer that makes design judgment available to agents as a service. Not a design tool and not a component library.
+- **Brand Capsule**: a self-contained, versioned, deterministic compilation of everything defining how a brand looks, feels and speaks. These packages consume what a capsule publishes.
+- **Expression Contracts**: design tokens name values; expression contracts encode intent, context and relationships. Tokens are a vocabulary list, contracts are a fluent speaker.
+- **Provenance**: traceable lineage from a rendered surface back to the decisions that produced it. The source markers are the front end of that.
+- **Taste as Infrastructure**: the thesis that design judgment can be encoded, structured and served the same way logic and data are.
+
+## Sibling packages
+
+The same brand, on other platforms:
+
+- [designless-swift](https://github.com/designlesshq/designless-swift): iOS, macOS, tvOS, watchOS, visionOS
+- [designless-kotlin](https://github.com/designlesshq/designless-kotlin): Kotlin and Android
+- [designless-dart](https://github.com/designlesshq/designless-dart): Dart and Flutter
+
+## Links
+
+- [README](https://github.com/designlesshq/designless-npm/blob/main/README.md): the package table and quick start
+- [designless.io](https://designless.io): product overview and the thesis
+- [designless.live](https://designless.live): vocabulary and definitions
+- [designless.app](https://designless.app): create and publish a brand
+
+## License
+
+Apache-2.0. Copyright 2026 Designless Private Limited.

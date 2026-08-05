@@ -1,5 +1,12 @@
 # Designless packages
 
+[![@designless/annotate](https://img.shields.io/npm/v/%40designless%2Fannotate?label=%40designless%2Fannotate&color=0A0A0A)](https://www.npmjs.com/package/@designless/annotate)
+[![create-designless](https://img.shields.io/npm/v/create-designless?label=create-designless&color=0A0A0A)](https://www.npmjs.com/package/create-designless)
+[![@designless/web](https://img.shields.io/npm/v/%40designless%2Fweb?label=%40designless%2Fweb&color=0A0A0A)](https://www.npmjs.com/package/@designless/web)
+[![@designless/react-native](https://img.shields.io/npm/v/%40designless%2Freact-native?label=%40designless%2Freact-native&color=0A0A0A)](https://www.npmjs.com/package/@designless/react-native)
+[![CI](https://github.com/designlesshq/designless-npm/actions/workflows/ci.yml/badge.svg)](https://github.com/designlesshq/designless-npm/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-0A0A0A)](LICENSE)
+
 Open-source npm packages for connecting a project to [Designless](https://designless.app), where you edit your rendered UI and the edits route back to your source.
 
 | Package | What it is |
@@ -21,4 +28,6 @@ Then start your dev server and open the Designless canvas.
 
 Only `@designless/annotate`, in development. It adds `data-source-*` attributes to host elements and does nothing else: no network calls, no change to production output.
 
-Apache-2.0
+## License
+
+Apache-2.0. Copyright 2026 Designless Private Limited. [designless.io](https://designless.io)
