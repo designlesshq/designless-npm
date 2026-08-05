@@ -204,4 +204,28 @@ describe('the canonical CDN manifest stays in sync with the baked baseline', () 
     // ...and the manifest declares no framework the baseline doesn't know.
     expect(Object.keys(manifest.frameworks).sort()).toEqual(Object.keys(BASELINE).sort());
   });
+
+  it('the note stays what it is, because it is the only prose the file carries', async () => {
+    // The frameworks are pinned above; the note is not, and that is how a
+    // sentence promising the file held "no secrets, no engine details" lived in
+    // it for months. It was written to reassure and did the opposite: telling a
+    // reader what a document withholds tells them something is withheld, and
+    // roughly what shape it has. The same sentence was removed from the serve
+    // manifest for the same reason.
+    //
+    // Pinned verbatim rather than screened for banned words. A word list would
+    // have to NAME what we consider internal, in a public repository, which is
+    // the mistake with more detail. Pinning names nothing: it just means any
+    // edit to this sentence is made here, in the open, on purpose.
+    const fs = await import('node:fs');
+    const url = new URL('../../cdn/annotate/capabilities.v1.json', import.meta.url);
+    const manifest = JSON.parse(fs.readFileSync(url, 'utf8'));
+    expect(manifest.note).toBe(
+      'Framework support for create-designless. Served statically at ' +
+        'https://cdn.designless.app/annotate/capabilities.v1.json and fetched by the ' +
+        'initializer, which merges it over its built-in baseline (so new framework ' +
+        'support ships without an npm release). This file is the canonical source; ' +
+        "the npm package's baked-in baseline mirrors it.",
+    );
+  });
 });
