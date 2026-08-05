@@ -88,46 +88,77 @@ for (const [key, e] of entries) {
   }
 }
 
-// ── Nothing internal reaches a public file ──────────────────────────────────
+// ── This file says only what it is for ──────────────────────────────────────
 //
-// This manifest is served from a CDN to anyone who asks. It carried a `note`
-// for months containing three sentences written for us rather than for a
-// consumer: a maintainer instruction ("regenerate instead of editing an entry
-// in place"), an internal architecture aside, and a reassurance that it holds
-// "no secrets, no engine details".
+// Served from a CDN to anyone who asks. It carried a `note` for months whose
+// last sentence promised the file held "no secrets, no engine details" —
+// written to reassure, and doing the opposite, because telling a reader what a
+// document withholds tells them something is withheld and roughly what shape
+// it has.
 //
-// That last one is the reason this check exists. Telling a reader what is NOT
-// in a document tells them something is being withheld and roughly what shape
-// it has. A public artefact should describe itself to the person using it and
-// say nothing about how it is maintained or what it is keeping back.
+// So this checks by ALLOWLIST, not by banned words. A banned-word list would
+// have to name the things we consider internal, in a public file, which is the
+// same mistake with more detail. An allowlist names only what is permitted and
+// says nothing about what is not.
 //
-// Checked over the whole serialised file, not just `note`, because the next
-// one will not arrive in the same field.
+// Every string in this document is one of four things: the schema and version
+// tags, a framework's own identifiers, a path or wiring token, or the note.
+// The note is pinned verbatim, so any edit to it — for any reason, by anyone —
+// has to be made here, in the open, on purpose.
+//
+// WHAT THIS DELIBERATELY DOES NOT CATCH, so nobody assumes it does. A short
+// word inside a framework `label` has the same shape as a legitimate one:
+// "Next.js (App Router)" and a label naming something internal are
+// indistinguishable by structure, and the only way to tell them apart is to
+// list the words that are internal — which is the thing this file must not do.
+//
+// That check exists, and it lives on the private side, where a word list is
+// not itself a disclosure. It runs against the PUBLISHED file rather than this
+// one, so it also catches a manifest edited anywhere other than here. Adding a
+// framework entry is a reviewed pull request in a public repository, which is
+// the other half of the answer.
 
-const INTERNAL_TELLS = [
-  // Maintainer instructions.
-  [/\bregenerate\b/i, 'a maintenance instruction'],
-  [/hand-written|hand-edited|hand-maintained/i, 'a maintenance instruction'],
-  [/\bdo not edit\b|\bgenerated file\b/i, 'a maintenance instruction'],
-  // Reassurance about what is withheld, which advertises that something is.
-  [/no secrets?\b/i, 'a claim about what is withheld'],
-  [/engine details?|internal(s| detail)/i, 'a claim about what is withheld'],
-  [/\bproprietary\b|\bIP-safe\b/i, 'a claim about what is withheld'],
-  // Internal vocabulary that has no meaning to a consumer.
-  [/\bcapsule\b/i, 'internal vocabulary'],
-  [/\bentitlement|\bplan[- ]gate|\btier\b/i, 'internal vocabulary'],
-  [/supabase|razorpay|polar|vercel|prism|loomx/i, 'a vendor or internal system name'],
-];
+const EXPECTED_NOTE =
+  'Framework support for the Designless serve integration: which file a ' +
+  'project wires the brand stylesheet into, and in what form. Served ' +
+  'statically at https://cdn.designless.app/serve/capabilities.v1.json and ' +
+  'fetched at resolve time, so support for a new framework arrives without ' +
+  "a client release. A partial, absent or malformed copy of this file falls " +
+  "back to the client's own defaults and never breaks resolution.";
 
-const serialised = JSON.stringify(doc);
-for (const [pattern, why] of INTERNAL_TELLS) {
-  const hit = serialised.match(pattern);
-  if (hit) {
-    fail(
-      `"${hit[0]}" appears in this public file, which reads as ${why}. ` +
-        `Describe the document to the person using it; say nothing about how ` +
-        `it is maintained or what it withholds.`,
-    );
+if (doc.note !== EXPECTED_NOTE) {
+  fail(
+    'the note does not match the pinned text. It is the only prose this file ' +
+      'carries and it is read by everyone who fetches it, so changing it is a ' +
+      'deliberate edit here rather than a passing one there.',
+  );
+}
+
+// `note` is the only place prose is allowed. A sentence anywhere else is a
+// sentence nobody reviewed as customer-facing.
+const PROSE = /[.!?]\s+[A-Za-z]|\b(because|therefore|internal|do not|note that)\b/i;
+const walk = (node, at) => {
+  if (typeof node === 'string') {
+    if (PROSE.test(node)) {
+      fail(`${at}: reads as prose. Only \`note\` carries sentences in this file.`);
+    }
+    return;
+  }
+  if (node && typeof node === 'object') {
+    for (const [k, v] of Object.entries(node)) {
+      if (at === '' && k === 'note') continue;
+      walk(v, at ? `${at}.${k}` : k);
+    }
+  }
+};
+walk(doc, '');
+
+// The top level is closed. A key added here reaches every consumer, so it is
+// added on purpose or not at all.
+const ALLOWED_TOP_LEVEL = ['schema', 'version', 'note', 'frameworks'];
+for (const k of Object.keys(doc)) {
+  if (!ALLOWED_TOP_LEVEL.includes(k)) {
+    fail(`unexpected top-level key "${k}". This document is served publicly; add keys deliberately.`);
   }
 }
 
