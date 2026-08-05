@@ -1,7 +1,7 @@
 {
   "schema": "designless-serve-capabilities/v1",
   "version": "v1",
-  "note": "Framework support for the Designless serve integration: which file a project wires the brand stylesheet into, and in what form. Served statically at https://cdn.designless.app/serve/capabilities.v1.json and fetched at resolve time, merged over a built-in baseline, so support for a new framework ships without a release. A partial, absent or malformed manifest falls back to that baseline and never breaks resolution. Separate from the annotate manifest by design: the two describe different wiring. Generated rather than hand-written, so regenerate instead of editing an entry in place. Public, inert data - no secrets, no engine details.",
+  "note": "Framework support for the Designless serve integration: which file a project wires the brand stylesheet into, and in what form. Served statically at https://cdn.designless.app/serve/capabilities.v1.json and fetched at resolve time, so support for a new framework arrives without a client release. A partial, absent or malformed copy of this file falls back to the client's own defaults and never breaks resolution.",
   "frameworks": {
     "html": {
       "id": "html",
