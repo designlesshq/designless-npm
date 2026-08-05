@@ -427,7 +427,7 @@
           "hint": "Add inside the dependencies { } block"
         },
         "verifyPath": "context.json",
-        "needle": "io.designless.serve",
+        "needle": "io.designless.serve.android",
         "runtimeCheck": "in the running app, brand.tokens is non-null after initialize() returns"
       }
     }
