@@ -85,4 +85,6 @@ Each engine reads the same frozen marker contract, so a stamped `<div>` looks id
 
 Development only. No network calls on any build path, no configuration, no change to production output. The package adds the marker attributes described above and nothing else.
 
-Apache-2.0 · [designless.app](https://designless.app)
+## License
+
+Apache-2.0. Copyright 2026 Designless Private Limited. [designless.io](https://designless.io)

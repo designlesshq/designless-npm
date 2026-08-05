@@ -35,7 +35,7 @@ function Title() {
 }
 ```
 
-## The five verbs
+## The API: five verbs
 
 These five are the whole surface of this package. Other Designless
 packages answer to the same names where they can, and each one is shaped
@@ -370,4 +370,6 @@ it did not.
   Native property each one belongs to would be inventing intent. Numbers
   come out, assembly is yours.
 
-Apache-2.0
+## License
+
+Apache-2.0. Copyright 2026 Designless Private Limited. [designless.io](https://designless.io)

@@ -122,4 +122,4 @@ build.
 
 ## License
 
-Apache-2.0. (c) Designless Private Limited.
+Apache-2.0. Copyright 2026 Designless Private Limited. [designless.io](https://designless.io)

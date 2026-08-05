@@ -54,3 +54,7 @@ Importing this package on the server is safe. There, `loadDesignless`
 resolves to a placeholder, and only calling one of its methods raises a
 clear error. Keep brand calls in browser code, such as a client component
 or an effect.
+
+## License
+
+Apache-2.0. Copyright 2026 Designless Private Limited. [designless.io](https://designless.io)
