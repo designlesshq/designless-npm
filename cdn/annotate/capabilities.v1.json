@@ -1,7 +1,7 @@
 {
   "schema": "designless-annotate-capabilities/v1",
   "version": "v1",
-  "note": "Framework support for create-designless. Served statically at https://cdn.designless.app/annotate/capabilities.v1.json and fetched by the initializer, which merges it over its built-in baseline (so new framework support ships without an npm release). This file is the canonical source; the npm package's baked-in baseline mirrors it. Public, inert data — no secrets, no engine details.",
+  "note": "Framework support for create-designless. Served statically at https://cdn.designless.app/annotate/capabilities.v1.json and fetched by the initializer, which merges it over its built-in baseline (so new framework support ships without an npm release). This file is the canonical source; the npm package's baked-in baseline mirrors it.",
   "frameworks": {
     "next": {
       "id": "next",
