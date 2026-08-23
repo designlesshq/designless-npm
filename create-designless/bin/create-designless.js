@@ -24,19 +24,6 @@ const { PACKAGE, resolveCapabilities, frameworkByToken } = require('../src/capab
 const { detectFramework } = require('../src/detect');
 const { planWiring } = require('../src/wire');
 const { runDoctor } = require('../src/doctor');
-// The lift engine lives in its own package (@designless/extract — decoupled
-// per the founder ruling 2026-08-24: separate folder, separate maintenance,
-// separate release train). Resolved LAZILY and never declared as a hard
-// dependency: this initializer must install and run before that package has
-// its first publish. Monorepo checkout resolves the sibling path; a published
-// install resolves the registry copy; neither -> an honest instruction.
-function loadExtract() {
-  for (const spec of ['@designless/extract', '../../extract/src/extract.js']) {
-    try { return require(spec); } catch { /* try the next */ }
-  }
-  return null;
-}
-
 function parseArgs(argv) {
   const out = { framework: null, yes: false, dryRun: false };
   for (const a of argv) {
@@ -45,6 +32,23 @@ function parseArgs(argv) {
     else if (!a.startsWith('-') && !out.framework) out.framework = a;
   }
   return out;
+}
+
+// The lift engine is a SEPARATE package (@designless/extract). This
+// initializer INVOKES it by name — the same relationship it has with
+// @designless/annotate, which it installs by name and never imports. That is
+// why create-designless carries no runtime dependencies: it is a door, not a
+// library. The monorepo checkout runs the sibling directly so local changes
+// are exercised; everywhere else npx fetches the published package.
+const EXTRACT_PACKAGE = '@designless/extract';
+
+function runExtractCommand(cwd, passthrough) {
+  const sibling = path.join(__dirname, '..', '..', 'extract', 'bin', 'extract.js');
+  if (fs.existsSync(sibling)) {
+    execFileSync(process.execPath, [sibling, ...passthrough], { cwd, stdio: 'inherit' });
+    return;
+  }
+  execFileSync('npx', ['--yes', EXTRACT_PACKAGE, ...passthrough], { cwd, stdio: 'inherit' });
 }
 
 function log(msg) { process.stdout.write(msg + '\n'); }
@@ -62,18 +66,11 @@ async function main() {
   // framework apps; no framework detection needed.
   if (args.framework === 'extract') {
     log('\n  Designless - lifting this project\'s style surface.\n');
-    const mod = loadExtract();
-    if (!mod) {
-      warn('the extract engine is not installed here. Run:  npx @designless/extract');
+    try {
+      runExtractCommand(cwd, process.argv.includes('--stdout') ? ['--stdout'] : []);
+    } catch (err) {
+      warn(`extract failed: ${err && err.message}. Run it directly:  npx ${EXTRACT_PACKAGE}`);
       process.exitCode = 1;
-      return;
-    }
-    const stdout = process.argv.includes('--stdout');
-    const surface = mod.runExtract(cwd, { stdout });
-    if (!stdout) {
-      log(`  Wrote .designless/style-surface.json`);
-      log(`  ${surface.entry_count} entries from ${surface.files_scanned} files` + (surface.truncated ? ' (TRUNCATED - surface is partial)' : ''));
-      log(`  Lanes: ${Object.entries(surface.lanes).map(([k, v]) => k + ':' + v).join('  ')}\n`);
     }
     return;
   }
