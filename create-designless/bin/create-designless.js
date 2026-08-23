@@ -24,6 +24,18 @@ const { PACKAGE, resolveCapabilities, frameworkByToken } = require('../src/capab
 const { detectFramework } = require('../src/detect');
 const { planWiring } = require('../src/wire');
 const { runDoctor } = require('../src/doctor');
+// The lift engine lives in its own package (@designless/extract — decoupled
+// per the founder ruling 2026-08-24: separate folder, separate maintenance,
+// separate release train). Resolved LAZILY and never declared as a hard
+// dependency: this initializer must install and run before that package has
+// its first publish. Monorepo checkout resolves the sibling path; a published
+// install resolves the registry copy; neither -> an honest instruction.
+function loadExtract() {
+  for (const spec of ['@designless/extract', '../../extract/src/extract.js']) {
+    try { return require(spec); } catch { /* try the next */ }
+  }
+  return null;
+}
 
 function parseArgs(argv) {
   const out = { framework: null, yes: false, dryRun: false };
@@ -42,6 +54,30 @@ function safeRead(p) { try { return fs.readFileSync(p, 'utf8'); } catch { return
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cwd = process.cwd();
+
+  // `extract` subcommand (brand-adoption end-to-end, 2026-08-23): the
+  // mechanical style-surface lift into .designless/style-surface.json. Thin
+  // by design — collection only; every judgment (escapes, clustering, token
+  // mapping) lives server-side. Works identically for static sites and
+  // framework apps; no framework detection needed.
+  if (args.framework === 'extract') {
+    log('\n  Designless - lifting this project\'s style surface.\n');
+    const mod = loadExtract();
+    if (!mod) {
+      warn('the extract engine is not installed here. Run:  npx @designless/extract');
+      process.exitCode = 1;
+      return;
+    }
+    const stdout = process.argv.includes('--stdout');
+    const surface = mod.runExtract(cwd, { stdout });
+    if (!stdout) {
+      log(`  Wrote .designless/style-surface.json`);
+      log(`  ${surface.entry_count} entries from ${surface.files_scanned} files` + (surface.truncated ? ' (TRUNCATED - surface is partial)' : ''));
+      log(`  Lanes: ${Object.entries(surface.lanes).map(([k, v]) => k + ':' + v).join('  ')}\n`);
+    }
+    return;
+  }
+
   log('\n  Designless - connecting your project so edits route back to source.\n');
 
   const caps = await resolveCapabilities();
