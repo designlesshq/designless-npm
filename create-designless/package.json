@@ -33,8 +33,5 @@
   },
   "devDependencies": {
     "vitest": "^2.1.9"
-  },
-  "dependencies": {
-    "@designless/extract": "^0.1.0"
   }
 }
