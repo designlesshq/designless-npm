@@ -24,7 +24,13 @@ const { PACKAGE, resolveCapabilities, frameworkByToken } = require('../src/capab
 const { detectFramework } = require('../src/detect');
 const { planWiring } = require('../src/wire');
 const { runDoctor } = require('../src/doctor');
-const { runExtract } = require('../src/extract');
+// The lift engine lives in its own package (@designless/extract — decoupled
+// per the 2026-08-24 founder ruling: separate folder, separate maintenance).
+// Resolved from the registry in a published install; the ../../extract path
+// covers the monorepo checkout.
+let runExtract;
+try { ({ runExtract } = require('@designless/extract')); }
+catch { ({ runExtract } = require('../../extract/src/extract.js')); }
 
 function parseArgs(argv) {
   const out = { framework: null, yes: false, dryRun: false };

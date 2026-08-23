@@ -1,0 +1,21 @@
+{
+  "name": "@designless/extract",
+  "version": "0.1.0",
+  "description": "Mechanical style-surface lift for brand adoption: walks a repo and lifts raw style declarations (CSS, custom properties, Tailwind, inline JSX) into .designless/style-surface.json with file:line provenance. Collection only — analysis lives server-side.",
+  "homepage": "https://designless.app",
+  "license": "Apache-2.0",
+  "author": "Designless Private Limited <hello@designless.app>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/designlesshq/designless-npm.git",
+    "directory": "extract"
+  },
+  "main": "src/extract.js",
+  "files": ["src"],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}
