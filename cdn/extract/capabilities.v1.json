@@ -1,0 +1,26 @@
+{
+  "schema": "designless-extract-capabilities/v1",
+  "version": "v1",
+  "note": "Invocation and lane support for the Designless style-surface extractor. Served statically at https://cdn.designless.app/extract/capabilities.v1.json and fetched at init time, so a changed command or a new lane arrives without a client release. A partial, absent or malformed copy falls back to the server's built-in baseline and never breaks resolution. This file is the canonical source; the server's baked-in baseline mirrors it.",
+  "command": "npm create designless@latest -- extract",
+  "commands": {
+    "initializer": "npm create designless@latest -- extract",
+    "direct": "npx @designless/extract",
+    "stdout": "npx @designless/extract --stdout"
+  },
+  "package": "@designless/extract",
+  "output": ".designless/style-surface.json",
+  "contract": "extract/v1",
+  "lanes": {
+    "css": "declarations in stylesheets, <style> bodies, and inline style attributes",
+    "custom-prop": "custom-property declarations — usually where a palette really lives",
+    "tailwind-arbitrary": "arbitrary values in utility classes",
+    "tailwind-class": "color and scale utility classes",
+    "tailwind-config": "scalar theme values in tailwind.config.*",
+    "jsx-inline": "literal values in JSX style objects"
+  },
+  "notes": {
+    "framework_agnostic": "One command covers static sites and framework apps; lanes are recognized by syntax, so nothing is detected or configured.",
+    "truncation": "A surface that hits the entry cap reports truncated:true — a partial surface never supports a zero-hardcoded claim."
+  }
+}
