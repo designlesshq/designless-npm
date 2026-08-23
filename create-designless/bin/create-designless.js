@@ -26,13 +26,17 @@ const { planWiring } = require('../src/wire');
 const { runDoctor } = require('../src/doctor');
 // The lift engine lives in its own package (@designless/extract — decoupled
 // per the founder ruling 2026-08-24: separate folder, separate maintenance,
-// separate release train). Resolved LAZILY and never declared as a hard
-// dependency: this initializer must install and run before that package has
-// its first publish. Monorepo checkout resolves the sibling path; a published
-// install resolves the registry copy; neither -> an honest instruction.
+// separate release train), declared as a real dependency now that it is
+// published. The monorepo SIBLING is tried first so development in this repo
+// exercises local changes rather than the last published copy; a published
+// install has no sibling and resolves the dependency. Either way the loaded
+// module must ANSWER TO THE CONTRACT before we use it — an unrelated package
+// that happens to sit at `extract` must never be mistaken for the engine.
 function loadExtract() {
-  for (const spec of ['@designless/extract', '../../extract/src/extract.js']) {
-    try { return require(spec); } catch { /* try the next */ }
+  for (const spec of ['../../extract/src/extract.js', '@designless/extract']) {
+    let mod;
+    try { mod = require(spec); } catch { continue; }
+    if (mod && typeof mod.runExtract === 'function' && mod.CONTRACT === 'extract/v1') return mod;
   }
   return null;
 }
