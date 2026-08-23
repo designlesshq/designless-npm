@@ -1,7 +1,7 @@
 {
   "name": "@designless/extract",
   "version": "0.1.0",
-  "description": "Mechanical style-surface lift for brand adoption: walks a repo and lifts raw style declarations (CSS, custom properties, Tailwind, inline JSX) into .designless/style-surface.json with file:line provenance. Collection only — analysis lives server-side.",
+  "description": "Mechanical style-surface lift for brand adoption: walks a repo and lifts raw style declarations (CSS, custom properties, Tailwind, inline JSX) into .designless/style-surface.json with file:line provenance. Collection only \u2014 analysis lives server-side.",
   "homepage": "https://designless.app",
   "license": "Apache-2.0",
   "author": "Designless Private Limited <hello@designless.app>",
@@ -11,11 +11,29 @@
     "directory": "extract"
   },
   "main": "src/extract.js",
-  "files": ["src"],
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run"
   },
   "devDependencies": {
     "vitest": "^2.1.9"
-  }
+  },
+  "bin": {
+    "designless-extract": "bin/extract.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "designless",
+    "design-tokens",
+    "css",
+    "tailwind",
+    "style-extraction"
+  ]
 }
