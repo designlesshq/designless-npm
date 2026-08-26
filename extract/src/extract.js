@@ -33,8 +33,19 @@ const PROP_RE = /^(color|background(?:-color|-image)?|border(?:-[a-z-]+)?|outlin
 
 const DECL_RE = /([a-zA-Z-]+)\s*:\s*([^;{}]+);/g;
 const CUSTOM_PROP_RE = /(--[a-zA-Z][\w-]*)\s*:\s*([^;{}]+);/g;
-const TW_ARBITRARY_RE = /class(?:Name)?\s*=\s*["'][^"']*?[\w-]+-\[([^\]]+)\]/g;
-const TW_CLASS_RE = /class(?:Name)?\s*=\s*["'][^"']*?\b((?:bg|text|border|ring|fill|stroke)-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-\d{2,3})\b/g;
+// Class lanes scan in TWO phases: find each class attribute, then scan its
+// VALUE with the per-utility patterns. The first cut folded both into one
+// regex anchored on `class=` — but /g resumes past the opening quote after a
+// match, so only the FIRST utility per attribute was ever lifted. Measured in
+// the adopt e2e (2026-08-26): `"... text-red-300 bg-red-950/30 ..."` reported
+// text-red-300 and silently dropped bg-red-950/30, understating the
+// hardcoded surface the zero-hardcoded claim is judged against.
+const TW_ATTR_RE = /class(?:Name)?\s*=\s*["']([^"']*)["']/g;
+const TW_ARBITRARY_INNER_RE = /[\w-]+-\[([^\]]+)\]/g;
+// The optional /NN opacity modifier is part of the utility and is captured
+// with it: `bg-red-500/15` is as hardcoded as `bg-red-500`, and the modifier
+// is what the rewrite has to carry over.
+const TW_CLASS_INNER_RE = /\b((?:bg|text|border|ring|fill|stroke|from|to|via)-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-\d{2,3}(?:\/\d{1,3})?)(?![\w/])/g;
 const JSX_STYLE_RE = /([a-zA-Z]+)\s*:\s*["'`]([^"'`]+)["'`]/g;
 
 function listFiles(root) {
@@ -133,14 +144,19 @@ function liftFile(entries, root, abs) {
 function liftClassLanes(entries, rel, text) {
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    let m;
-    TW_ARBITRARY_RE.lastIndex = 0;
-    while ((m = TW_ARBITRARY_RE.exec(lines[i]))) {
-      entries.push({ lane: 'tailwind-arbitrary', property: 'class', value: m[1], file: rel, line: i + 1 });
-    }
-    TW_CLASS_RE.lastIndex = 0;
-    while ((m = TW_CLASS_RE.exec(lines[i]))) {
-      entries.push({ lane: 'tailwind-class', property: 'class', value: m[1], file: rel, line: i + 1 });
+    let attr;
+    TW_ATTR_RE.lastIndex = 0;
+    while ((attr = TW_ATTR_RE.exec(lines[i]))) {
+      const value = attr[1];
+      let m;
+      TW_ARBITRARY_INNER_RE.lastIndex = 0;
+      while ((m = TW_ARBITRARY_INNER_RE.exec(value))) {
+        entries.push({ lane: 'tailwind-arbitrary', property: 'class', value: m[1], file: rel, line: i + 1 });
+      }
+      TW_CLASS_INNER_RE.lastIndex = 0;
+      while ((m = TW_CLASS_INNER_RE.exec(value))) {
+        entries.push({ lane: 'tailwind-class', property: 'class', value: m[1], file: rel, line: i + 1 });
+      }
     }
   }
 }
