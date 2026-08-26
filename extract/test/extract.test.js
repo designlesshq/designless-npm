@@ -91,3 +91,47 @@ describe('runExtract', () => {
     expect(second.entry_count).toBe(first.entry_count);
   });
 });
+
+// ── Every utility in the attribute is lifted, not just the first ────────────
+//
+// The single-regex first cut anchored each match on `class=`; /g resumed past
+// the opening quote, so the second and later utilities in the same attribute
+// were invisible. The adopt e2e surfaced it: bg-red-950/30 hid behind
+// text-red-300 in the same className.
+describe('class lanes: whole-attribute scanning', () => {
+  let root2;
+  beforeAll(() => {
+    root2 = mkdtempSync(join(tmpdir(), 'dl-extract-attr-'));
+    writeFileSync(join(root2, 'a.tsx'),
+      '<div className="flex text-red-300 bg-red-950/30 px-3 text-cyan-400 rounded" />');
+    writeFileSync(join(root2, 'b.tsx'),
+      '<h1 className="text-[44px] sm:text-[56px] leading-[1.1] max-w-[700px]" />');
+    writeFileSync(join(root2, 'c.tsx'),
+      '<div className="bg-gradient-to-r from-cyan-500 to-blue-600" />');
+  });
+  afterAll(() => { rmSync(root2, { recursive: true, force: true }); });
+
+  it('lifts every palette class in one attribute, including /opacity modifiers', () => {
+    const s = extractSurface(root2);
+    const values = s.entries
+      .filter((e) => e.lane === 'tailwind-class' && e.file === 'a.tsx')
+      .map((e) => e.value).sort();
+    expect(values).toEqual(['bg-red-950/30', 'text-cyan-400', 'text-red-300']);
+  });
+
+  it('lifts every arbitrary value in one attribute', () => {
+    const s = extractSurface(root2);
+    const values = s.entries
+      .filter((e) => e.lane === 'tailwind-arbitrary' && e.file === 'b.tsx')
+      .map((e) => e.value).sort();
+    expect(values).toEqual(['1.1', '44px', '56px', '700px']);
+  });
+
+  it('gradient stop utilities (from/to/via) are palette classes too', () => {
+    const s = extractSurface(root2);
+    const values = s.entries
+      .filter((e) => e.lane === 'tailwind-class' && e.file === 'c.tsx')
+      .map((e) => e.value).sort();
+    expect(values).toEqual(['from-cyan-500', 'to-blue-600']);
+  });
+});
