@@ -25,14 +25,34 @@ const { detectFramework } = require('../src/detect');
 const { planWiring } = require('../src/wire');
 const { runDoctor } = require('../src/doctor');
 function parseArgs(argv) {
-  const out = { framework: null, yes: false, dryRun: false };
+  const out = { framework: null, yes: false, dryRun: false, help: false };
   for (const a of argv) {
     if (a === '--yes' || a === '-y') out.yes = true;
     else if (a === '--dry-run') out.dryRun = true;
+    else if (a === '--help' || a === '-h') out.help = true;
     else if (!a.startsWith('-') && !out.framework) out.framework = a;
   }
   return out;
 }
+
+// The door has TWO arms and must say so. Before this block existed there was
+// no --help at all: a bare invocation fell straight into framework detection
+// and died with "could not detect a supported framework" — a message that
+// does not know `extract` exists, on the one class of project (a plain static
+// site) where extract is exactly the right arm.
+const USAGE = `
+  create-designless: the door into Designless for a code repo.
+
+  Wire annotate (framework apps, so edits route back to source):
+    npm create designless@latest -- next          # or: vite
+    npm create designless@latest                  # auto-detect the framework
+      --yes       skip confirmation    --dry-run   plan only, write nothing
+
+  Lift the style surface (any repo — static site or framework app):
+    npm create designless@latest -- extract
+      writes .designless/style-surface.json (contract extract/v1)
+      --stdout    print the surface instead of writing it
+`;
 
 // The lift engine is a SEPARATE package (@designless/extract). This
 // initializer INVOKES it by name — the same relationship it has with
@@ -58,6 +78,11 @@ function safeRead(p) { try { return fs.readFileSync(p, 'utf8'); } catch { return
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cwd = process.cwd();
+
+  if (args.help) {
+    log(USAGE);
+    return;
+  }
 
   // `extract` subcommand (brand-adoption end-to-end, 2026-08-23): the
   // mechanical style-surface lift into .designless/style-surface.json. Thin
@@ -93,7 +118,8 @@ async function main() {
     log(`  Framework: ${entry.label}.`);
   }
   if (!entry) {
-    warn('could not detect a supported framework. Re-run with a framework arg: `npm create designless@latest -- next` (or `vite`).');
+    warn('could not detect a supported framework. Re-run with a framework arg (`npm create designless@latest -- next` or `vite`), or, for a static site or any repo you only want the style surface of, use the extract arm:');
+    log(USAGE);
     process.exitCode = 1;
     return;
   }
