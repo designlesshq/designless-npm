@@ -96,6 +96,35 @@ fn has_attr(el: &JSXOpeningElement, want: &str) -> bool {
     })
 }
 
+/// The one place the two supported SWC ABIs disagree.
+///
+/// A JSX attribute's string value is `JSXAttrValue::Str` on the newer core and
+/// `JSXAttrValue::Lit(Lit::Str(..))` on the one Next 15 hosts. Everything else
+/// in this plugin compiles unchanged against both, so the whole
+/// two-ABI story is this function.
+///
+/// Selected by the `swc_jsx_attr_str` cfg, which each crate sets for the core it
+/// pins — never auto-detected, because a wrong guess here produces a plugin that
+/// builds and then fails to invoke, which is exactly the failure mode this
+/// change exists to end.
+#[cfg(swc_jsx_attr_str)]
+fn jsx_str_value(value: &str) -> JSXAttrValue {
+    JSXAttrValue::Str(Str {
+        span: Default::default(),
+        value: value.into(),
+        raw: None,
+    })
+}
+
+#[cfg(not(swc_jsx_attr_str))]
+fn jsx_str_value(value: &str) -> JSXAttrValue {
+    JSXAttrValue::Lit(swc_core::ecma::ast::Lit::Str(Str {
+        span: Default::default(),
+        value: value.into(),
+        raw: None,
+    }))
+}
+
 fn str_attr(name: &str, value: &str) -> JSXAttrOrSpread {
     JSXAttrOrSpread::JSXAttr(JSXAttr {
         span: Default::default(),
@@ -103,11 +132,7 @@ fn str_attr(name: &str, value: &str) -> JSXAttrOrSpread {
             name.into(),
             Default::default(),
         )),
-        value: Some(JSXAttrValue::Str(Str {
-            span: Default::default(),
-            value: value.into(),
-            raw: None,
-        })),
+        value: Some(jsx_str_value(value)),
     })
 }
 

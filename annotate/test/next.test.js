@@ -7,10 +7,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { withDesignless, WASM_RELATIVE, resolveProjectRoot } from '../src/next.js';
+import { withDesignless, resolveProjectRoot, chooseCandidate, CANDIDATES } from '../src/next.js';
 import { _resetWarnings } from '../src/gating.js';
 
-const WASM = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src', WASM_RELATIVE);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const WASM = path.resolve(HERE, '../src', CANDIDATES[0].rel);
+// The wiring tests must not depend on a Next install: force the candidate so
+// they exercise config shape, not host selection (which has its own tests).
+const FORCE = { enabled: true, wasm: CANDIDATES[0].spec };
 
 beforeEach(() => _resetWarnings());
 
@@ -34,7 +38,7 @@ function withWasm(present, fn) {
 describe('dev wiring', () => {
   it('injects the swcPlugin as a package SPECIFIER, not an absolute path (the Turbopack-resolution fix)', () => {
     withWasm(true, () => {
-      const cfg = withDesignless({ reactStrictMode: true }, { enabled: true });
+      const cfg = withDesignless({ reactStrictMode: true }, FORCE);
       expect(cfg.reactStrictMode).toBe(true);
       const plugins = cfg.experimental.swcPlugins;
       expect(Array.isArray(plugins)).toBe(true);
@@ -48,7 +52,7 @@ describe('dev wiring', () => {
 
   it('is additive - never clobbers an existing swcPlugins entry', () => {
     withWasm(true, () => {
-      const cfg = withDesignless({ experimental: { swcPlugins: [['other.wasm', {}]] } }, { enabled: true });
+      const cfg = withDesignless({ experimental: { swcPlugins: [['other.wasm', {}]] } }, FORCE);
       const names = cfg.experimental.swcPlugins.map((p) => p[0]);
       expect(names.some((n) => n.includes('other.wasm'))).toBe(true);
       expect(names.some((n) => n.includes('annotate.wasm'))).toBe(true);
@@ -57,8 +61,8 @@ describe('dev wiring', () => {
 
   it('is idempotent - re-wrapping a wrapped config does not double-wire', () => {
     withWasm(true, () => {
-      const once = withDesignless({}, { enabled: true });
-      const twice = withDesignless(once, { enabled: true });
+      const once = withDesignless({}, FORCE);
+      const twice = withDesignless(once, FORCE);
       const count = twice.experimental.swcPlugins.filter((p) => p[0].includes('annotate.wasm')).length;
       expect(count).toBe(1);
     });
@@ -68,7 +72,7 @@ describe('dev wiring', () => {
 describe('project-root threading (the S1 stamp-gap fix)', () => {
   it('threads a NON-EMPTY root into the plugin config (not the old `{}`)', () => {
     withWasm(true, () => {
-      const cfg = withDesignless({}, { enabled: true, root: '/repo/project' });
+      const cfg = withDesignless({}, { ...FORCE, root: '/repo/project' });
       const entry = cfg.experimental.swcPlugins[0];
       expect(entry[0]).toBe('@designless/annotate/swc/annotate.wasm');
       expect(entry[1]).toBeTypeOf('object');
@@ -79,7 +83,7 @@ describe('project-root threading (the S1 stamp-gap fix)', () => {
 
   it('falls back to process.cwd() when no explicit root is given', () => {
     withWasm(true, () => {
-      const cfg = withDesignless({}, { enabled: true });
+      const cfg = withDesignless({}, FORCE);
       const entry = cfg.experimental.swcPlugins[0];
       expect(entry[1].root).toBe(process.cwd());
       expect(entry[1].root.length).toBeGreaterThan(0);
@@ -88,7 +92,7 @@ describe('project-root threading (the S1 stamp-gap fix)', () => {
 
   it('prefers nextConfig.dir over cwd (Next records the project dir on the config)', () => {
     withWasm(true, () => {
-      const cfg = withDesignless({ dir: '/somewhere/app' }, { enabled: true });
+      const cfg = withDesignless({ dir: '/somewhere/app' }, FORCE);
       expect(cfg.experimental.swcPlugins[0][1].root).toBe('/somewhere/app');
     });
   });
@@ -118,7 +122,7 @@ describe('the two hard rules', () => {
   it('LOUD no-op: missing wasm -> config returned untouched, build proceeds', () => {
     withWasm(false, () => {
       const input = { reactStrictMode: true };
-      const out = withDesignless(input, { enabled: true });
+      const out = withDesignless(input, FORCE);
       expect(out).toBe(input);
       expect(out.experimental).toBeUndefined();
     });
@@ -150,7 +154,7 @@ if (!e2eReady) console.warn('[next.test] wasm not built or @swc/core missing - s
   // SPECIFIER for the on-disk wasm path @swc/core needs at the test layer, and
   // keep the wrapper's threaded `{ root }` verbatim.
   function transformViaWrappedConfig(code, { projectRoot, filename }) {
-    const cfg = withDesignless({ dir: projectRoot }, { enabled: true });
+    const cfg = withDesignless({ dir: projectRoot }, FORCE);
     const [, pluginOpts] = cfg.experimental.swcPlugins[0];
     return swc.transformSync(code, {
       filename,
@@ -189,5 +193,94 @@ if (!e2eReady) console.warn('[next.test] wasm not built or @swc/core missing - s
       }).code;
       expect(out).not.toContain('data-source-file');
     });
+  });
+});
+
+/**
+ * ABI selection. The failure this guards is not "no markers" - it is a wasm the
+ * host rejects, which Next reports as a build error and serves as a 500. A
+ * dev-only convenience must never be able to do that, so every path that cannot
+ * name a loadable artifact has to return the config untouched.
+ */
+describe('ABI selection preflights instead of predicting', () => {
+  // A stub @next/swc: `stamping` lists the wasm paths this fake host accepts.
+  // Anything else throws, exactly as a real runner/plugin mismatch does.
+  const abs = (c) => path.resolve(HERE, '../src', c.rel);
+  function fakeHost({ stamping = [], loadsButSilent = [] } = {}) {
+    return {
+      transformSync(src, isModule, buf) {
+        const opts = JSON.parse(buf.toString());
+        const wasm = opts.jsc.experimental.plugins[0][0];
+        if (stamping.some((s) => wasm === s)) {
+          return { code: 'const __d = <div data-source-file="a.tsx" />;' };
+        }
+        if (loadsButSilent.some((s) => wasm === s)) return { code: 'const __d = <div />;' };
+        throw new Error('failed to invoke plugin');
+      },
+    };
+  }
+
+  it('picks the FIRST candidate the host actually accepts', () => {
+    const chosen = chooseCandidate(fakeHost({ stamping: [abs(CANDIDATES[0])] }), '/repo');
+    expect(chosen).toBeTruthy();
+    expect(chosen.core).toBe(CANDIDATES[0].core);
+  });
+
+  it('SKIPS a candidate the host rejects and falls through to one it accepts', () => {
+    // Reject the preferred artifact; accept only the older-ABI one. This is the
+    // live Next 15.5 case: the newest build is exactly the one that cannot load.
+    const older = CANDIDATES[CANDIDATES.length - 1];
+    const chosen = chooseCandidate(fakeHost({ stamping: [abs(older)] }), '/repo');
+    expect(chosen).toBeTruthy();
+    expect(chosen.core).toBe(older.core);
+  });
+
+  it('a host that rejects EVERY candidate yields null (caller must fail open)', () => {
+    expect(chooseCandidate(fakeHost({ stamping: [] }), '/repo')).toBe(null);
+  });
+
+  it('"loads but stamps nothing" counts as a failure, not a pass', () => {
+    // A silent load is indistinguishable from a broken one from the user's
+    // side, and picking it would mask a real regression behind a green wire.
+    const all = CANDIDATES.map(abs);
+    expect(chooseCandidate(fakeHost({ loadsButSilent: all }), '/repo')).toBe(null);
+  });
+
+  it('no usable host bindings -> null rather than a throw', () => {
+    expect(chooseCandidate(null, '/repo')).toBe(null);
+    expect(chooseCandidate({}, '/repo')).toBe(null);
+    expect(chooseCandidate({ transformSync: 'nope' }, '/repo')).toBe(null);
+  });
+
+  it('FAIL OPEN: an unresolvable Next host returns the config untouched', () => {
+    const input = { reactStrictMode: true };
+    const out = withDesignless(input, { enabled: true, root: '/nonexistent/project' });
+    expect(out).toBe(input);
+    expect(out.experimental).toBeUndefined();
+  });
+});
+
+/**
+ * Packaging. Shipping an artifact the wrapper can name but npm does not publish
+ * turns every host on that ABI into a silent no-op, which is precisely the
+ * shape of the bug this whole mechanism exists to fix.
+ */
+describe('every candidate artifact is built AND published', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.resolve(HERE, '../package.json'), 'utf8'));
+
+  it.each(CANDIDATES.map((c) => [c.core, c]))('swc_core %s is built, exported and packaged', (_core, candidate) => {
+    const abs = path.resolve(HERE, '../src', candidate.rel);
+    expect(fs.existsSync(abs), `missing artifact ${candidate.rel} - run npm run build:swc`).toBe(true);
+
+    // The swcPlugins entry MUST be a package subpath specifier; Turbopack treats
+    // an absolute path as a server-relative import and fails to resolve it.
+    expect(candidate.spec.startsWith('@designless/annotate/')).toBe(true);
+    const subpath = candidate.spec.replace('@designless/annotate', '.');
+    expect(Object.keys(pkg.exports)).toContain(subpath);
+
+    // ...and the file the exports map points at has to be in `files`, or the
+    // published tarball resolves the specifier to nothing.
+    const target = pkg.exports[subpath].replace(/^\.\//, '');
+    expect(pkg.files.some((f) => target === f || target.startsWith(f.replace(/\/$/, '') + '/'))).toBe(true);
   });
 });
