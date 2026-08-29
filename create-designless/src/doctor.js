@@ -6,8 +6,17 @@
  * references the wrapper/plugin. `doctorReport` is PURE over an injected facts
  * object (unit-tested); `runDoctor` gathers the facts from disk.
  *
- * The doctor never "fixes" - it reports. A green doctor is the initializer's
- * proof of success; a red doctor names exactly what's missing.
+ * These checks never "fix" - they report, and they report only what can be read
+ * off disk: is the package a dependency, are its artifacts present, does the
+ * config reference the wiring.
+ *
+ * WHAT THEY CANNOT TELL YOU, and must not be presented as telling you: whether
+ * a marker actually reaches the rendered page. All three passed for months on
+ * Next 15 while the plugin could not load at all and every route returned 500 -
+ * the wiring was perfect and the result was a dead dev server. Proving markers
+ * arrive means running the app and reading its output, which a scaffold has no
+ * business doing. The agent already boots and captures the app, so it makes
+ * that claim; this file only reports what it can see.
  */
 
 'use strict';
@@ -31,9 +40,11 @@ function doctorReport(entry, facts) {
   // The wasm artifact only matters for the SWC (Next) engine.
   if (entry.engine === 'swc') {
     checks.push({
-      name: 'SWC marker plugin present',
+      name: 'marker plugin builds present',
       ok: !!facts.wasmPresent,
-      detail: facts.wasmPresent ? 'annotate.wasm shipped in the package' : 'annotate.wasm missing - reinstall the package',
+      detail: facts.wasmPresent
+        ? 'every build the package ships is on disk'
+        : 'a build the package ships is missing - reinstall it',
     });
   }
   checks.push({
@@ -55,10 +66,25 @@ function isInstalled(projectDir) {
   return false;
 }
 
-/** Is the SWC wasm artifact present in the installed package? */
+/**
+ * Are the SWC wasm artifacts present in the installed package?
+ *
+ * Reads the installed package's own `exports` map rather than a hardcoded path.
+ * The package ships one build per compiler ABI and picks between them at
+ * startup, so checking a single file reports "present" while the build this
+ * host actually needs is missing - which fails open to no markers on exactly
+ * the hosts that need it. Every artifact the package advertises must be there.
+ */
 function isWasmPresent(projectDir) {
   try {
-    return fs.existsSync(path.join(projectDir, 'node_modules', PACKAGE, 'swc-plugin', 'annotate.wasm'));
+    const root = path.join(projectDir, 'node_modules', PACKAGE);
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    const wasm = Object.values((pkg && pkg.exports) || {})
+      .filter((t) => typeof t === 'string' && t.endsWith('.wasm'));
+    // No wasm advertised at all: an older package, or a non-SWC install. Fall
+    // back to the historical single path rather than reporting a false pass.
+    if (!wasm.length) return fs.existsSync(path.join(root, 'swc-plugin', 'annotate.wasm'));
+    return wasm.every((rel) => fs.existsSync(path.join(root, rel)));
   } catch { return false; }
 }
 
