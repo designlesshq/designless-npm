@@ -2,11 +2,13 @@ node_modules/
 # Rust build output. The shipped artifact is swc-plugin/annotate.wasm (tracked).
 target/
 */swc-plugin/target/
+*/swc-plugin-core*/target/
 Cargo.lock
 # ...but the swc-plugin lock IS tracked: it pins swc_core + its plugin host ABI so
 # CI rebuilds the wasm reproducibly. An open caret range (swc_core = "68") let CI
 # resolve a newer 68.x whose plugin ABI dropped host symbols → wasm link failure.
 !annotate/swc-plugin/Cargo.lock
+!annotate/swc-plugin-core*/Cargo.lock
 .DS_Store
 *.tgz
 .vitest/
