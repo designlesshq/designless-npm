@@ -11,7 +11,10 @@ It does exactly two things, and tells you about both:
 1. Adds [`@designless/annotate`](https://www.npmjs.com/package/@designless/annotate) as a devDependency.
 2. Wires it into your config (wraps `next.config.js`, or shows you the two-line Vite snippet).
 
-Then it runs a doctor and reports what it found, so you never have to wonder whether it worked.
+Then it reports what it put in place. It can see that the package is installed, its builds are
+present and your config references them. It cannot see whether markers reach your rendered
+pages, because that needs your app running - Designless checks that when you open the project,
+and tells you either way.
 
 ## Flags
 

@@ -9,9 +9,13 @@
  *
  * Discipline: this writes only TWO things - a devDependency and a config edit
  * it fully understands (else it prints manual instructions). It never runs a
- * build, never touches source, and always ends by running the doctor so the
- * user sees proof. Failures are loud and human; nothing here can break a
- * project that wasn't already broken.
+ * build, never touches source, and always ends by reporting what it put in
+ * place. That report is deliberately not called proof: it reads the filesystem,
+ * so it can say the package and its builds are installed and the config points
+ * at them, and it CANNOT say a marker reached a rendered page. Claiming the
+ * latter is how a wiring that produced 500s on every route read as a clean
+ * install. The agent runs the app and makes that claim. Failures are loud and
+ * human; nothing here can break a project that wasn't already broken.
  */
 
 'use strict';
@@ -160,17 +164,22 @@ async function main() {
     log('\n' + (plan.instructions || 'Manual wiring required.'));
   }
 
-  // 3) Doctor - the proof.
+  // 3) Report what is on disk. NOT a verdict on whether markers work - see the
+  // header of src/doctor.js. This step can see that the package is installed,
+  // its builds are present and the config references them; it cannot see
+  // whether a marker reaches the rendered page, and saying "verified" here is
+  // what let a completely broken install read as a clean one.
   if (!args.dryRun && args.yes) {
-    log('\n  Doctor:');
+    log('\n  Wiring:');
     const report = runDoctor(entry, cwd);
     for (const c of report.checks) log(`    ${c.ok ? '✓' : '✗'} ${c.name} - ${c.detail}`);
     log(report.ok
-      ? '\n  Done. Start your dev server, open the Designless canvas, and edit live.\n'
-      : '\n  Some checks failed above - resolve them, then re-run `npx create-designless` to re-check.\n');
+      ? '\n  Wiring is in place. Start your dev server and open this project in Designless -\n'
+        + '  it checks the running app and tells you whether markers are coming through.\n'
+      : '\n  Some of the above is missing - resolve it, then re-run `npx create-designless`.\n');
     if (!report.ok) process.exitCode = 1;
   } else {
-    log('\n  After installing + wiring, run `npx create-designless -- ' + entry.id + ' --yes` to verify.\n');
+    log('\n  After installing + wiring, run `npx create-designless -- ' + entry.id + ' --yes` to check it over.\n');
   }
 }
 
