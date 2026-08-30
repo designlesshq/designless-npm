@@ -183,6 +183,38 @@ function extractSurface(root) {
   };
 }
 
+/**
+ * Make `.designless/` ignore itself, before anything is written into it.
+ *
+ * Everything Designless writes here is local to one machine: a style surface
+ * lifted from this checkout, and session state that includes a token. None of
+ * it is meant to travel, and a token least of all, so the default has to be
+ * that it cannot be committed by accident.
+ *
+ * The ignore file goes INSIDE the directory rather than into the repository's
+ * own .gitignore, and the difference is the point. A repository's .gitignore is
+ * a tracked file the developer owns; editing it without being asked is a change
+ * to their project. A file inside a directory we just created is ours to write,
+ * so this needs no prompt, no consent, and no cooperation from whatever tool
+ * runs next. Git reads a .gitignore that its own `*` ignores, so one line covers
+ * the directory and itself.
+ *
+ * It is written once. A developer who deliberately wants something here tracked
+ * can `git add -f`, or edit this file, and a later run will not undo that.
+ */
+function ensureLocalOnly(dir) {
+  const ignore = path.join(dir, '.gitignore');
+  if (fs.existsSync(ignore)) return false;
+  fs.writeFileSync(
+    ignore,
+    '# Local to this machine. Designless writes session state and extracted\n' +
+    '# style surfaces here, and session state carries a token, so none of it\n' +
+    '# should reach a remote. Track something here deliberately with: git add -f\n' +
+    '*\n',
+  );
+  return true;
+}
+
 /** CLI runner: write .designless/style-surface.json (or stdout). */
 function runExtract(cwd, { stdout = false } = {}) {
   const surface = extractSurface(cwd);
@@ -190,8 +222,9 @@ function runExtract(cwd, { stdout = false } = {}) {
   if (stdout) { process.stdout.write(json + '\n'); return surface; }
   const dir = path.join(cwd, '.designless');
   fs.mkdirSync(dir, { recursive: true });
+  ensureLocalOnly(dir);
   fs.writeFileSync(path.join(dir, 'style-surface.json'), json);
   return surface;
 }
 
-module.exports = { extractSurface, runExtract, CONTRACT };
+module.exports = { extractSurface, runExtract, ensureLocalOnly, CONTRACT };
