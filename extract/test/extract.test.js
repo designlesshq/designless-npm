@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
+import { execFileSync } from 'child_process';
 import { join } from 'path';
 import { extractSurface, runExtract, CONTRACT } from '../src/extract.js';
 
@@ -133,5 +134,66 @@ describe('class lanes: whole-attribute scanning', () => {
       .filter((e) => e.lane === 'tailwind-class' && e.file === 'c.tsx')
       .map((e) => e.value).sort();
     expect(values).toEqual(['from-cyan-500', 'to-blue-600']);
+  });
+});
+
+/**
+ * Local by default. Everything written into `.designless/` belongs to one
+ * machine: a style surface lifted from this checkout, and session state that
+ * carries a token. The directory therefore ignores itself from the moment it
+ * exists, so none of it can be committed by accident.
+ *
+ * These assert the EFFECT rather than the file, by asking real git whether the
+ * files are ignored. A test that only checked for a `.gitignore` containing `*`
+ * would still pass if the rule stopped working.
+ */
+describe('.designless/ is local to this machine', () => {
+  let repo;
+  const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: 'pipe' }).toString();
+
+  beforeAll(() => {
+    repo = mkdtempSync(join(tmpdir(), 'dl-localonly-'));
+    execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: repo, stdio: 'pipe' });
+    writeFileSync(join(repo, 'a.css'), ':root{--brand:#0a0}');
+  });
+  afterAll(() => rmSync(repo, { recursive: true, force: true }));
+
+  it('git ignores the whole directory once extract has run', () => {
+    runExtract(repo);
+    expect(existsSync(join(repo, '.designless', 'style-surface.json'))).toBe(true);
+    // Nothing under .designless/ may appear as untracked.
+    const untracked = git('status', '--porcelain', '--untracked-files=all')
+      .split('\n').filter((l) => l.includes('.designless'));
+    expect(untracked).toEqual([]);
+    expect(git('check-ignore', '-q', '.designless/style-surface.json')).toBe('');
+  });
+
+  it('covers a session stamp written later by something else', () => {
+    // The stamp is written by the agent, not by this package, and it is the
+    // file that actually carries a token. It must land already ignored.
+    writeFileSync(join(repo, '.designless', 'session.json'), '{"bind_token":"secret"}');
+    const untracked = git('status', '--porcelain', '--untracked-files=all')
+      .split('\n').filter((l) => l.includes('.designless'));
+    expect(untracked).toEqual([]);
+  });
+
+  it('ignores its own ignore file, so the directory leaves no trace at all', () => {
+    expect(git('check-ignore', '-q', '.designless/.gitignore')).toBe('');
+  });
+
+  it('does not touch the repository own .gitignore', () => {
+    // Editing a tracked file the developer owns is the thing that would need
+    // asking. Writing inside a directory we created does not.
+    expect(existsSync(join(repo, '.gitignore'))).toBe(false);
+  });
+
+  it('never overwrites a developer decision', () => {
+    const p = join(repo, '.designless', '.gitignore');
+    writeFileSync(p, '# mine\n*\n!style-surface.json\n');
+    runExtract(repo);
+    expect(readFileSync(p, 'utf8')).toBe('# mine\n*\n!style-surface.json\n');
+    // and their un-ignore genuinely takes effect
+    expect(git('status', '--porcelain', '--untracked-files=all'))
+      .toContain('.designless/style-surface.json');
   });
 });
