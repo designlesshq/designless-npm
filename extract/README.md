@@ -1,6 +1,6 @@
 # @designless/extract
 
-Lifts a repo's style surface into one canonical file, so [Designless](https://designless.app) can adopt an existing codebase under a brand.
+Lifts a repo's style surface into one canonical file, so the Designless desktop app can adopt an existing codebase under a brand.
 
 Adopting an app under a brand starts with a plain question: what style values does this code actually contain, and where? This package answers it mechanically. It walks the repo, lifts every style-bearing declaration with its `(file, line)`, and writes them to `.designless/style-surface.json`. That is all it does.
 
