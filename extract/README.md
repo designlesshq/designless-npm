@@ -4,6 +4,8 @@ Lifts a repo's style surface into one canonical file, so [Designless](https://de
 
 Adopting an app under a brand starts with a plain question: what style values does this code actually contain, and where? This package answers it mechanically. It walks the repo, lifts every style-bearing declaration with its `(file, line)`, and writes them to `.designless/style-surface.json`. That is all it does.
 
+What it writes is local to your machine. On the first run it also puts a `.gitignore` inside `.designless/` containing a single `*`, so the directory ignores itself and nothing in it can be committed by accident. That matters because Designless keeps session state alongside the surface, and session state carries a token. The rule goes inside the directory rather than into your repo's own `.gitignore`, which is yours and is left alone. If you want something in there tracked deliberately, `git add -f` it or edit that file: it is written once and never rewritten.
+
 ## Use it
 
 ```bash
@@ -38,7 +40,9 @@ It makes no judgments. It does not decide which values are wrong, what they shou
 
 ## Three guarantees
 
-- **Read-only.** It never modifies a file in your project other than writing `.designless/style-surface.json`.
+- **Read-only.** It writes two files, both inside `.designless/`, and nothing else in your
+  project: the surface itself, and a `.gitignore` that makes that directory ignore itself.
+  Your own `.gitignore` is never touched.
 - **Deterministic.** The same repo produces the same surface, byte for byte.
 - **Honest about limits.** Very large repos hit an entry cap; when that happens the output says `truncated: true` rather than quietly claiming to be complete.
 
