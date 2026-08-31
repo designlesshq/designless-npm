@@ -1,6 +1,6 @@
 {
   "name": "@designless/react-native",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Your brand in a React Native app. Colours, type, spacing and marks come from your published brand, and change when you publish.",
   "license": "Apache-2.0",
   "homepage": "https://designless.app",

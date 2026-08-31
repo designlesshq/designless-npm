@@ -105,16 +105,30 @@ function flatten(
   // `toShadow` all narrow internally and return null for what they cannot
   // read), so widening here hands them the value instead of walking past it.
   visit: (key: string, value: unknown) => void,
+  /*
+   * Optional: does this node hold a VALUE rather than more tokens?
+   *
+   * `isGroup` cannot answer that for a composite OBJECT. It correctly stops at
+   * an array, so a `cubicBezier` tuple reaches its converter, but a DTCG
+   * `shadow` is an object of named parts and is indistinguishable from a group
+   * by shape alone — walking it emits `shadow.md.offsetX` and friends, and
+   * `toShadow` never sees a shadow.
+   *
+   * The caller knows what its own type looks like and `flatten` does not, so
+   * the test comes from the caller. Without one the behaviour is exactly what
+   * it was.
+   */
+  isValue?: (node: TokenNode) => boolean,
 ): void {
   if (node === undefined) return;
-  if (!isGroup(node)) {
+  if (!isGroup(node) || (isValue !== undefined && isValue(node))) {
     visit(prefix, node);
     return;
   }
   const keys = Object.keys(node);
   for (let i = 0; i < keys.length; i += 1) {
     const key = keys[i];
-    flatten(node[key], prefix ? prefix + "." + key : key, visit);
+    flatten(node[key], prefix ? prefix + "." + key : key, visit, isValue);
   }
 }
 
@@ -150,13 +164,26 @@ function flatMixed(
   return out;
 }
 
+/**
+ * A DTCG shadow composite, which `flatten` must hand over whole rather than
+ * walk into. Both offsets are required by the format and by `toShadow`, so
+ * their presence is what marks the object as a shadow rather than a group of
+ * more shadows.
+ */
+function isShadowComposite(node: TokenNode): boolean {
+  if (node === null || typeof node !== "object") return false;
+  if (Array.isArray(node)) return true;
+  const obj = node as { [key: string]: unknown };
+  return "offsetX" in obj && "offsetY" in obj;
+}
+
 function flatShadows(node: TokenNode | undefined): { [key: string]: ShadowStyle } {
   const out: { [key: string]: ShadowStyle } = {};
   const dev = isDev();
   flatten(node, "", (key, value) => {
     const shadow = toShadow(value, dev);
     if (shadow) out[key] = shadow;
-  });
+  }, isShadowComposite);
   return out;
 }
 
