@@ -119,24 +119,14 @@ function splitAlpha(color: string | null): { color: string; opacity: number } {
 }
 
 /**
- * A shadow style, or null when the value is not a shadow. The value "none"
- * is a shadow, and it converts to an empty style.
+ * Pick the layer React Native can actually draw, and shape it.
+ *
+ * Extracted so the string path and the composite path cannot drift: React
+ * Native renders ONE shadow, so a multi-layer shadow has to choose, and inset
+ * layers are dropped because there is no inner-shadow primitive. That decision
+ * belongs in one place regardless of which form the value arrived in.
  */
-export function toShadow(raw: unknown, includeDropCount: boolean): ShadowStyle | null {
-  if (typeof raw !== "string") return null;
-  const text = raw.trim();
-  if (!text) return null;
-  if (text === "none") return {};
-  const layers: Layer[] = [];
-  const pieces = splitLayers(text);
-  for (let i = 0; i < pieces.length; i += 1) {
-    const layer = readLayer(pieces[i]);
-    if (!layer) return null;
-    if (layer.numbers.length < 2) return null;
-    layers.push(layer);
-  }
-  if (!layers.length) return null;
-
+function shadowFromLayers(layers: Layer[], includeDropCount: boolean): ShadowStyle | null {
   let dropped = 0;
   let chosen: Layer | null = null;
   for (let i = 0; i < layers.length; i += 1) {
@@ -165,4 +155,105 @@ export function toShadow(raw: unknown, includeDropCount: boolean): ShadowStyle |
   };
   if (includeDropCount && dropped) style.__droppedLayers = dropped;
   return style;
+}
+
+/**
+ * The same Layer, read from a DTCG composite instead of a CSS string.
+ *
+ * `readLayer` above parses `0 4px 6px -1px rgba(...)` positionally. A DTCG
+ * shadow names its parts instead — `{ offsetX, offsetY, blur, spread, color,
+ * inset }` — so the fields go straight into the same slots and everything
+ * downstream (layer selection, inset dropping, alpha splitting) is untouched.
+ *
+ * Order matters and is CSS's, not the object's: offsetX, offsetY, blur,
+ * spread. `numbers` is positional for the consumers below, so reading the
+ * object's own key order would put spread where blur belongs whenever an
+ * author wrote the fields in a different sequence.
+ *
+ * Returns null for anything without both offsets, matching `readLayer`'s
+ * `numbers.length < 2` rule: a layer that names no position is not a shadow.
+ */
+function layerFromComposite(raw: unknown): Layer | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as { [key: string]: unknown };
+
+  const length = (v: unknown): number | null => {
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v !== "string") return null;
+    const text = v.trim();
+    if (!NUMBER.test(text)) return null;
+    const n = Number(text.replace(/(px|rem)$/, ""));
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const x = length(obj.offsetX);
+  const y = length(obj.offsetY);
+  if (x === null || y === null) return null;
+
+  const numbers: number[] = [x, y];
+  const blur = length(obj.blur);
+  const spread = length(obj.spread);
+  // Spread sits after blur positionally, so a spread with no blur needs a zero
+  // written into blur's slot. Same rule the CSS emitter follows.
+  if (blur !== null) numbers.push(blur);
+  else if (spread !== null) numbers.push(0);
+  if (spread !== null) numbers.push(spread);
+
+  const color = typeof obj.color === "string" ? obj.color : null;
+  return { inset: obj.inset === true, numbers, color };
+}
+
+/**
+ * A shadow style, or null when the value is not a shadow. The value "none"
+ * is a shadow, and it converts to an empty style.
+ */
+export function toShadow(raw: unknown, includeDropCount: boolean): ShadowStyle | null {
+  const layers: Layer[] = [];
+
+  /*
+   * A shadow arrives two ways, and both are the same shadow.
+   *
+   * DTCG models `shadow` as an object of named parts, or an array of them for
+   * a layered shadow. Every capsule served the CSS string until now and a
+   * stylesheet always carries it, so both keep working: a released version of
+   * this package will meet a payload from before that change and one from
+   * after, and cannot know which.
+   *
+   * Without this the string guard below returns null, which is not an error a
+   * caller sees — the key is dropped and the component renders with no
+   * elevation at all, indistinguishable from a brand that declared none. Same
+   * silent shape the easing curves had.
+   *
+   * An empty array is a deliberate "no shadow", matching what the string
+   * "none" already means here.
+   */
+  if (Array.isArray(raw) || (raw !== null && typeof raw === "object")) {
+    const pieces = Array.isArray(raw) ? raw : [raw];
+    if (!pieces.length) return {};
+    for (let i = 0; i < pieces.length; i += 1) {
+      // A layer already in CSS-string form inside an array stays readable,
+      // because the conversion lands token by token rather than all at once.
+      const layer = typeof pieces[i] === "string"
+        ? readLayer((pieces[i] as string).trim())
+        : layerFromComposite(pieces[i]);
+      if (!layer) return null;
+      if (layer.numbers.length < 2) return null;
+      layers.push(layer);
+    }
+    return shadowFromLayers(layers, includeDropCount);
+  }
+
+  if (typeof raw !== "string") return null;
+  const text = raw.trim();
+  if (!text) return null;
+  if (text === "none") return {};
+  const pieces = splitLayers(text);
+  for (let i = 0; i < pieces.length; i += 1) {
+    const layer = readLayer(pieces[i]);
+    if (!layer) return null;
+    if (layer.numbers.length < 2) return null;
+    layers.push(layer);
+  }
+  if (!layers.length) return null;
+  return shadowFromLayers(layers, includeDropCount);
 }
