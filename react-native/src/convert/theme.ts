@@ -99,7 +99,12 @@ export interface ThemeOptions {
 function flatten(
   node: TokenNode | undefined,
   prefix: string,
-  visit: (key: string, value: string | number) => void,
+  // Widened from `string | number` because a leaf can now be a composite: a
+  // `cubicBezier` tuple, or a `shadow` object or array. Every visitor already
+  // takes `unknown` at its own boundary (`toEasing`, `toDuration`, `toLength`,
+  // `toShadow` all narrow internally and return null for what they cannot
+  // read), so widening here hands them the value instead of walking past it.
+  visit: (key: string, value: unknown) => void,
 ): void {
   if (node === undefined) return;
   if (!isGroup(node)) {
