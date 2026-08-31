@@ -42,7 +42,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "esbuild src/index.ts --bundle --format=esm --target=es2019 --outfile=dist/index.mjs --log-level=warning && esbuild src/index.ts --bundle --format=cjs --target=es2019 --outfile=dist/index.cjs --log-level=warning && tsc -p tsconfig.build.json && node -e \"require('fs').copyFileSync('dist/index.d.ts', 'dist/index.d.cts')\"",
-    "test": "npm run build && node --test test/",
+    "test": "npm run build && node --test test/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
