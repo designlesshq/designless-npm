@@ -1,6 +1,6 @@
 {
   "name": "@designless/react-native",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Your brand in a React Native app. Colours, type, spacing and marks come from your published brand, and change when you publish.",
   "license": "Apache-2.0",
   "homepage": "https://designless.app",
@@ -61,7 +61,7 @@
   },
   "scripts": {
     "build": "esbuild src/index.ts --bundle --format=esm --target=es2019 --outfile=dist/index.mjs --external:react --external:react-native --log-level=warning && esbuild src/index.ts --bundle --format=cjs --target=es2019 --outfile=dist/index.cjs --external:react --external:react-native --log-level=warning && tsc -p tsconfig.build.json && node scripts/declarations.mjs",
-    "test": "npm run build && node --test test/",
+    "test": "npm run build && node --test \"test/**/*.test.mjs\"",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm test"
   },
