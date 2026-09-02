@@ -28,6 +28,7 @@ const { PACKAGE, resolveCapabilities, frameworkByToken } = require('../src/capab
 const { detectFramework } = require('../src/detect');
 const { planWiring } = require('../src/wire');
 const { runDoctor } = require('../src/doctor');
+const { runTypecheck, MIN_TYPED_VERSION } = require('../src/build-gate');
 function parseArgs(argv) {
   const out = { framework: null, yes: false, dryRun: false, help: false };
   for (const a of argv) {
@@ -129,7 +130,7 @@ async function main() {
   }
 
   // 1) The package (a devDependency - dev-only, zero runtime cost).
-  const installCmd = ['install', '-D', PACKAGE];
+  const installCmd = ['install', '-D', `${PACKAGE}@^${MIN_TYPED_VERSION}`];
   if (args.dryRun) {
     log(`\n  Would install:  npm ${installCmd.join(' ')}`);
   } else if (args.yes) {
@@ -173,6 +174,20 @@ async function main() {
     log('\n  Wiring:');
     const report = runDoctor(entry, cwd);
     for (const c of report.checks) log(`    ${c.ok ? '✓' : '✗'} ${c.name} - ${c.detail}`);
+    // 4) The build gate. On a TypeScript project the compiler reads the config
+    // we just wrapped; a missing declaration surfaces here, where it can be
+    // seen, instead of in the next build. Reported, never patched.
+    const gate = runTypecheck(cwd);
+    if (gate.skipped) {
+      log(`    · type-check - ${gate.skipped}`);
+    } else if (gate.ok) {
+      log('    ✓ type-check - the project type-checks with the wiring in place');
+    } else {
+      log(`    ✗ type-check - ${gate.errors[0] || 'failed'}`);
+      for (const e of gate.errors.slice(1)) log(`        ${e}`);
+      log(`        ${gate.fix}`);
+      report.ok = false;
+    }
     log(report.ok
       ? '\n  Wiring is in place. Start your dev server and open this project in Designless -\n'
         + '  it checks the running app and tells you whether markers are coming through.\n'

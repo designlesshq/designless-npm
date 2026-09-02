@@ -1,6 +1,6 @@
 {
   "name": "@designless/annotate",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Build-time source markers so Designless can route a rendered element back to its exact source line. Inert, dev-only, zero network. The only Designless code in your build.",
   "homepage": "https://designless.app",
   "license": "Apache-2.0",
@@ -27,14 +27,38 @@
   "type": "commonjs",
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./babel": "./src/babel.js",
-    "./next": "./src/next.js",
-    "./svelte": "./src/svelte.js",
-    "./vue": "./src/vue.js",
-    "./astro": "./src/astro.js",
-    "./qwik": "./src/qwik.js",
-    "./contract": "./src/contract.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./babel": {
+      "types": "./types/babel.d.ts",
+      "default": "./src/babel.js"
+    },
+    "./next": {
+      "types": "./types/next.d.ts",
+      "default": "./src/next.js"
+    },
+    "./svelte": {
+      "types": "./types/svelte.d.ts",
+      "default": "./src/svelte.js"
+    },
+    "./vue": {
+      "types": "./types/vue.d.ts",
+      "default": "./src/vue.js"
+    },
+    "./astro": {
+      "types": "./types/astro.d.ts",
+      "default": "./src/astro.js"
+    },
+    "./qwik": {
+      "types": "./types/qwik.d.ts",
+      "default": "./src/qwik.js"
+    },
+    "./contract": {
+      "types": "./types/contract.d.ts",
+      "default": "./src/contract.js"
+    },
     "./swc/annotate.wasm": "./swc-plugin/annotate.wasm",
     "./package.json": "./package.json",
     "./swc/core35.wasm": "./swc-plugin-core35/annotate.wasm"
@@ -43,7 +67,8 @@
     "src",
     "swc-plugin/annotate.wasm",
     "swc-plugin-core35/annotate.wasm",
-    "README.md"
+    "README.md",
+    "types"
   ],
   "scripts": {
     "test": "vitest run",
@@ -59,5 +84,31 @@
     "@vue/compiler-sfc": "^3.5.38",
     "svelte": "^5.56.3",
     "vitest": "^2.1.9"
+  },
+  "types": "./types/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "babel": [
+        "./types/babel.d.ts"
+      ],
+      "next": [
+        "./types/next.d.ts"
+      ],
+      "svelte": [
+        "./types/svelte.d.ts"
+      ],
+      "vue": [
+        "./types/vue.d.ts"
+      ],
+      "astro": [
+        "./types/astro.d.ts"
+      ],
+      "qwik": [
+        "./types/qwik.d.ts"
+      ],
+      "contract": [
+        "./types/contract.d.ts"
+      ]
+    }
   }
 }
