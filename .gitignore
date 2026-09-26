@@ -1,4 +1,6 @@
-node_modules/
+# No trailing slash: `node_modules/` matches only directories, and git does not
+# treat a symlink as one, so a node_modules link slipped past it and got tracked.
+node_modules
 # Rust build output. The shipped artifact is swc-plugin/annotate.wasm (tracked).
 target/
 */swc-plugin/target/
