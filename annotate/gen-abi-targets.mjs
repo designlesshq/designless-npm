@@ -18,8 +18,14 @@
  *     Next 16.2.1  (runner 24)      REJECTED ok
  *
  * So the generations are WIDE: runners 23, 24 and 29 all accept the same
- * artifact, and the only boundary we have actually observed sits between
- * Next 15 and Next 16. Two artifacts cover every Next in the wild today.
+ * artifact, and the first boundary we observed sits between Next 15 and
+ * Next 16.
+ *
+ * The second one (measured 2026-09-26, table in src/next.js): Next 16.4 canary
+ * moved to swc_core 79, and the core68 build fails to deserialize its modules
+ * while Next 16.3.6 (swc_core 73) and 16.4.0-canary.0 (76) still take it. The
+ * core79 build is the only one that runs there, and it fails on every earlier
+ * Next 16. Three artifacts cover every Next we test today.
  *
  * Do NOT key this on the Next version. Next 16.1 and 16.2 embed different
  * runners; a "next15/next16" split is wrong by construction even though the
@@ -44,6 +50,12 @@ export const TARGETS = [
     // range therefore resolves to a version that cannot compile the crate that
     // asked for it, and the error lands inside swc_core with no mention of us.
     pins: { swc_plugin_macro: '=1.1.0' },
+  },
+  {
+    core: '79',
+    jsxAttrStr: true,
+    hosts: 'Next 16.4 canary (swc_core 79)',
+    pins: {},
   },
 ]
 

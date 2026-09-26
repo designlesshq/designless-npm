@@ -91,6 +91,7 @@ jobs:
           path: |
             annotate/swc-plugin/annotate.wasm
             annotate/swc-plugin-core35/annotate.wasm
+            annotate/swc-plugin-core79/annotate.wasm
 
   next-turbopack:
     name: 'real Next (${{ matrix.next }}) under Turbopack'

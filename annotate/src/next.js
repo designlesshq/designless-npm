@@ -33,10 +33,17 @@
  * is not trustworthy. Measured by loading each artifact through the host's own
  * @next/swc binary:
  *
- *     host                          core35   core68
- *     Next 15.5.19 (runner 18)      ok       REJECTED
- *     Next 16.1.7  (runner 23)      REJECTED ok
- *     Next 16.2.1  (runner 24)      REJECTED ok
+ *     host (swc_core it pins)           core35   core68   core79
+ *     Next 15.5.26                      ok       REJECTED REJECTED
+ *     Next 16.1.7                       REJECTED ok       probe only
+ *     Next 16.2.1  (57)                 REJECTED ok       probe only
+ *     Next 16.3.6  (73)                 REJECTED ok       probe only
+ *     Next 16.4.0-canary.0  (76)        REJECTED ok       probe only
+ *     Next 16.4.0-canary.48 (79)        REJECTED probe only ok
+ *
+ * ("probe only": the artifact passed the old one-element probe and then failed
+ * on a real component and on Next's own app-page-runtime.js. Measured
+ * 2026-09-26 against each host's @next/swc binary.)
  *
  * Compatibility generations are wide and their edges are not where the version
  * numbers suggest: runners 23, 24 and 29 accept the same artifact, while two
@@ -69,19 +76,29 @@ const fs = require('fs');
 const { isEnabled, warnOnce } = require('./gating');
 
 /**
- * Candidate artifacts, newest ABI first. Each is one build of the SAME source
- * against a different `swc_core`; they are behaviourally identical. Order only
- * decides which is tried first, never which is correct - preflight decides that.
- * Keep in lockstep with gen-abi-targets.mjs and the package `exports` map.
+ * Candidate artifacts. Each is one build of the SAME source against a different
+ * `swc_core`; they are behaviourally identical. Order only decides which is
+ * tried first, never which is correct - preflight decides that. The base build
+ * leads because it serves the widest range of Next in use today; the oldest
+ * ABI stays last. Keep in lockstep with gen-abi-targets.mjs and the package
+ * `exports` map.
  */
 const CANDIDATES = [
   { rel: '../swc-plugin/annotate.wasm', spec: '@designless/annotate/swc/annotate.wasm', core: 68 },
+  { rel: '../swc-plugin-core79/annotate.wasm', spec: '@designless/annotate/swc/core79.wasm', core: 79 },
   { rel: '../swc-plugin-core35/annotate.wasm', spec: '@designless/annotate/swc/core35.wasm', core: 35 },
 ];
 
-// A minimal host-JSX source. It must produce a marker under a correct load, so
-// "loaded but stamped nothing" is treated as a failure rather than a pass.
-const PREFLIGHT_SRC = 'const __d = <div />;';
+// The probe. It must produce a marker under a correct load, so "loaded but
+// stamped nothing" is treated as a failure rather than a pass, AND it must carry
+// the constructs a real file does. It used to be `const __d = <div />;`, which
+// holds no string at all: under Next 16.4.0-canary.48 the swc_core 68 build
+// passed that probe and then failed to deserialize every real module (string
+// literals and JSX string attributes changed shape), and the swc_core 79 build
+// passed it on every Next 16.1 to 16.3 host and failed the same way there. With
+// this probe, the probe's verdict matched the real-file verdict on all eighteen
+// host x artifact pairs measured.
+const PREFLIGHT_SRC = 'export default function Page(){ return <main className="a"><h1>Hi</h1><p>{"x"}</p></main> }';
 const PREFLIGHT_FILE = 'designless-preflight.tsx';
 
 /** Memoised per host binary - preflight is cheap but runs on every config load. */
