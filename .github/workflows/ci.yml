@@ -22,6 +22,18 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+      # The committed wasm is what a release ships, and the build below
+      # overwrites it before anything else reads it, so scan it first. A
+      # build machine's home path in an artifact lands in every npm tarball
+      # (scripts/build-swc.mjs remaps them and refuses a build that has one).
+      - name: Committed wasm carries no build-machine paths
+        working-directory: annotate
+        run: |
+          if grep -laE '/Users/|/home/' swc-plugin/annotate.wasm swc-plugin-core*/annotate.wasm; then
+            echo "FAIL: the wasm above embeds a build-machine home path. Rebuild with npm run build:swc and commit it."
+            exit 1
+          fi
+
       # Builds EVERY ABI target and fails if any artifact is missing. Building
       # only the default one is how a package shipped that could not load on
       # Next 15 at all: nothing here ever compiled the other pin.

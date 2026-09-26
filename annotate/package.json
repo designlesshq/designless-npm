@@ -1,6 +1,6 @@
 {
   "name": "@designless/annotate",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Build-time source markers so Designless can route a rendered element back to its exact source line. Inert, dev-only, zero network. The only Designless code in your build.",
   "homepage": "https://designless.app",
   "license": "Apache-2.0",
