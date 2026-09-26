@@ -41,7 +41,7 @@ const { withDesignless } = require('@designless/annotate/next')
 module.exports = withDesignless({ /* your config */ })
 ```
 
-Tested on Next 15.5 and Next 16.1 through 16.2. Next builds its SWC plugin
+Tested on Next 15.5, Next 16.1 through 16.3, and the Next 16.4 canary. Next builds its SWC plugin
 support against a specific compiler ABI, and that ABI changes between releases,
 so the package ships one build per ABI and picks the right one for your Next at
 startup. If a future Next ships an ABI none of them match, markers switch off

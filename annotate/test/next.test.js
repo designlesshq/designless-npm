@@ -246,6 +246,26 @@ describe('ABI selection preflights instead of predicting', () => {
     expect(chooseCandidate(fakeHost({ loadsButSilent: all }), '/repo')).toBe(null);
   });
 
+  it('the probe carries a string literal and a JSX string attribute', () => {
+    // A probe with no string in it (`<div />`) passed on hosts whose string
+    // nodes had changed shape, so the wrapper picked a build that then failed
+    // on every real module (Next 16.4 canary, swc_core 79). The probe has to
+    // exercise what a real file does or its verdict means nothing.
+    const seen = [];
+    const host = {
+      transformSync(src) {
+        seen.push(src);
+        throw new Error('failed to invoke plugin');
+      },
+    };
+    chooseCandidate(host, '/repo');
+    expect(seen.length).toBeGreaterThan(0);
+    for (const src of seen) {
+      expect(src).toMatch(/<\w+[^>]*\s\w+="[^"]*"/); // a JSX string attribute
+      expect(src).toMatch(/\{\s*"[^"]*"\s*\}/); // a string literal expression
+    }
+  });
+
   it('no usable host bindings -> null rather than a throw', () => {
     expect(chooseCandidate(null, '/repo')).toBe(null);
     expect(chooseCandidate({}, '/repo')).toBe(null);
