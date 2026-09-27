@@ -11,23 +11,50 @@
  * whichever Next release happens to land on it.
  */
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, readdirSync, existsSync } from 'node:fs'
+import { copyFileSync, readdirSync, existsSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { resolve } from 'node:path'
 import { TARGETS, generate } from '../gen-abi-targets.mjs'
 generate()
 
 // The base crate is the source of truth AND the runner-29 artifact.
 const CRATES = [{ dir: 'swc-plugin', core: 68 }, ...TARGETS.map((t) => ({ dir: `swc-plugin-core${t.core}`, core: t.core }))]
 
+/*
+  THE ARTIFACT MUST NOT CARRY THE MACHINE THAT BUILT IT.
+
+  A dependency's panic messages hold the absolute path of its source file, and
+  cargo compiles registry crates from the builder's cargo home, so every wasm
+  used to ship `/Users/<name>/.cargo/registry/src/...` forty-odd times. The
+  package is published from whoever runs the release, so that was the
+  operator's home directory, in every tarball on npm.
+
+  --remap-path-prefix rewrites those paths at compile time. It is passed as a
+  `--config` value rather than through RUSTFLAGS because RUSTFLAGS would
+  REPLACE annotate/.cargo/config.toml's `link-arg=--allow-undefined` for this
+  target instead of joining it (cargo concatenates array config values from
+  --config and config files; the env var wins outright). `profile.trim-paths`
+  would do this natively but is not stable yet.
+*/
+const CARGO_HOME = process.env.CARGO_HOME || resolve(homedir(), '.cargo')
+const REMAP = ['--config', `target.wasm32-wasip1.rustflags=${JSON.stringify([
+  `--remap-path-prefix=${CARGO_HOME}=/cargo`,
+  `--remap-path-prefix=${resolve('.')}=/annotate`,
+])}`]
+
+// A build machine's home directory, macOS or Linux (CI builds under /home/runner).
+const HOME_PATH = /\/Users\/|\/home\//g
+
 let failed = 0
 for (const { dir, core } of CRATES) {
   process.stdout.write(`building ${dir} (swc_core ${core}) ... `)
   try {
-    execFileSync('cargo', ['build', '--release', '--locked', '--target', 'wasm32-wasip1', '--manifest-path', `${dir}/Cargo.toml`], { stdio: 'pipe' })
+    execFileSync('cargo', ['build', '--release', '--locked', '--target', 'wasm32-wasip1', '--manifest-path', `${dir}/Cargo.toml`, ...REMAP], { stdio: 'pipe' })
   } catch (e) {
     // --locked fails on a first build with no lockfile; retry once unlocked so
     // a fresh checkout can bootstrap, then the lockfile is committed.
     try {
-      execFileSync('cargo', ['build', '--release', '--target', 'wasm32-wasip1', '--manifest-path', `${dir}/Cargo.toml`], { stdio: 'pipe' })
+      execFileSync('cargo', ['build', '--release', '--target', 'wasm32-wasip1', '--manifest-path', `${dir}/Cargo.toml`, ...REMAP], { stdio: 'pipe' })
     } catch (e2) {
       console.log('FAILED')
       console.error(String(e2.stderr || e2.stdout || e2.message).split('\n').filter((l) => l.startsWith('error')).slice(0, 5).join('\n'))
@@ -38,6 +65,8 @@ for (const { dir, core } of CRATES) {
   const outDir = `${dir}/target/wasm32-wasip1/release`
   const wasm = readdirSync(outDir).find((f) => f.endsWith('.wasm'))
   if (!wasm) { console.log('FAILED (no .wasm emitted)'); failed++; continue }
+  const leaks = readFileSync(`${outDir}/${wasm}`).toString('latin1').match(HOME_PATH)
+  if (leaks) { console.log(`FAILED (${leaks.length} build-machine home paths in the wasm)`); failed++; continue }
   copyFileSync(`${outDir}/${wasm}`, `${dir}/annotate.wasm`)
   console.log('ok')
 }
